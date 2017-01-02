@@ -1119,9 +1119,7 @@ public abstract class Utils {
 	}
 
 	public static void close(Closeable inCloseable) {
-
 		close(inCloseable, false);
-
 	}
 
 	public static void flush(OutputStream inOutputStream) {
