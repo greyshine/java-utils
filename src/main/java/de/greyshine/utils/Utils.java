@@ -84,6 +84,18 @@ public abstract class Utils {
 		return inValue == null ? inDefault : inValue;
 	}
 	
+	public static String defaultIfBlank(String inValue, String inDefault) {
+		return inValue == null || inValue.trim().isEmpty() ? inDefault : inValue;
+	}
+	
+	public static String nullIfBlank(String inValue, String inDefault) {
+		return inValue == null || inValue.trim().isEmpty() ? null : inValue;
+	}
+	
+	public static String emptyIfBlank(String inValue, String inDefault) {
+		return inValue == null || inValue.trim().isEmpty() ? "" : inValue;
+	}
+	
 	public static <T> T trimToNull(T inValue) {
 		return trimToDefault(inValue, null);
 	}
@@ -98,6 +110,28 @@ public abstract class Utils {
 	
 	public RuntimeException toRuntimeException(Exception e) {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
+	}
+	
+	public static <T> T requireNonNull(T inValue) {
+		return requireNonNull(inValue, null);
+	}
+	public static <T> T requireNonNull(T inValue, String inMessage) {
+		
+		inMessage = defaultIfBlank( inMessage, "Value must have not have been null." );
+		
+		if ( inValue == null ) {
+			throw new IllegalArgumentException( inMessage );
+		}
+		
+		return inValue;
+	}
+	
+	public static <T> Wrapper<T> wrapper(T inValue) {
+		return new Wrapper<T>(inValue);
+	}
+	
+	public static <T> Wrapper<T> wrapper() {
+		return new Wrapper<T>();
 	}
 	
 	
