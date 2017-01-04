@@ -68,9 +68,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.JsonToken;
 
+import de.greyshine.utils.FieldHandler;
 import de.greyshine.utils.MapBuilder;
 import de.greyshine.utils.Utils.IHandler;
 import de.greyshine.utils.Utils.IMapHandler;
+import de.greyshine.utils.Wrapper;
 import de.greyshine.utils.deprecated.IFileTraverser.Traverser;
 
 public abstract class Utils {
@@ -5003,18 +5005,18 @@ public abstract class Utils {
 		return !equals(inO1, inO2, true);
 	}
 
-	public static boolean equals(Object inO1, Object inO2, boolean isBothNullEqual) {
-
-		if (inO1 == null && inO2 == null) {
-			return isBothNullEqual;
-		} else if (inO1 == null && inO2 != null) {
-			return false;
-		} else if (inO2 == null && inO1 != null) {
-			return false;
+		public static boolean equals(Object inO1, Object inO2, boolean isBothNullEqual) {
+	
+			if (inO1 == null && inO2 == null) {
+				return isBothNullEqual;
+			} else if (inO1 == null && inO2 != null) {
+				return false;
+			} else if (inO2 == null && inO1 != null) {
+				return false;
+			}
+	
+			return inO1.equals(inO2);
 		}
-
-		return inO1.equals(inO2);
-	}
 
 	public static boolean notEquals(Object inO1, Object inO2, boolean isBothNullEqual) {
 
@@ -5376,35 +5378,6 @@ public abstract class Utils {
 		}
 		
 		return theList;
-	}
-	
-	public static class Wrapper<T> {
-
-		public volatile T value;
-
-		public Wrapper() {
-
-		}
-
-		public Wrapper(T inDefault) {
-			value = inDefault;
-		}
-
-		public boolean isNull() {
-
-			return value == null;
-		}
-
-		public boolean isNotNull() {
-
-			return value != null;
-		}
-
-		@Override
-		public String toString() {
-			
-			return super.toString() +" [value="+ value +"]";
-		}
 	}
 	
 	public static class Dev0OutputStream extends OutputStream {

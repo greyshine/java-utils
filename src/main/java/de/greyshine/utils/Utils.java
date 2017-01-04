@@ -3,16 +3,20 @@ package de.greyshine.utils;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.Charset;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -25,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -238,6 +243,52 @@ public abstract class Utils {
 		return Boolean.FALSE.equals( inBoolean );
 	}
 	
+	public static Throwable findThrowable(Throwable inThrowable, Class<? extends Throwable> inThrowableClass) {
+
+		if (inThrowable == null || inThrowableClass == null) {
+			return null;
+		}
+
+		Throwable t = inThrowable;
+		
+		final Set<Throwable> listeds = new HashSet<>(3);
+
+		while (t != null) {
+
+			if (inThrowableClass.isAssignableFrom(t.getClass())) {
+				return t;
+			}
+
+			t = t.getCause();
+			
+			if ( listeds.contains( t ) ) {
+				t = null;
+			}
+		}
+
+		return null;
+	}
+	
+	public static List<Throwable> listCauses(Throwable inThrowable) {
+		
+		final List<Throwable> theCauses = new ArrayList<>();
+		
+		Throwable t = inThrowable;
+		
+		while (t != null) {
+			
+			theCauses.add( t );
+			
+			t = t.getCause();
+			
+			if ( theCauses.contains( t ) ) {
+				break;
+			}
+		}
+		
+		return theCauses;
+	}
+	
 	// ------------
 	// File related
 	// ------------
@@ -248,6 +299,16 @@ public abstract class Utils {
 	
 	public static boolean isDir(File inFile) {
 		return inFile != null && inFile.isDirectory();
+	}
+	
+	public static String getFileType(File inFile) {
+
+		if (inFile == null) {
+			return null;
+		}
+
+		final int theIdx = inFile.getName().lastIndexOf('.');
+		return theIdx < 0 ? null : inFile.getName().substring(theIdx + 1);
 	}
 	
 	public static File getCanonicalFile(File inFile) {
@@ -268,6 +329,47 @@ public abstract class Utils {
 
 			return inFile.getAbsoluteFile();
 		}
+	}
+	
+	public static FileOutputStream createOutputStream(String inFile) {
+
+		return inFile == null ? null : createOutputStream(new File(inFile));
+	}
+
+	public static FileOutputStream createOutputStream(File inFile) {
+
+		if (inFile == null || inFile.isDirectory()) {
+			return null;
+		}
+
+		mkParentDirs(inFile);
+
+		if (!inFile.getParentFile().isDirectory()) {
+			return null;
+		}
+
+		try {
+
+			return new FileOutputStream(inFile);
+
+		} catch (final Exception e) {
+			// swallow
+			return null;
+		}
+	}
+	
+	public static boolean mkParentDirs(File inTarget) {
+
+		if (inTarget == null) {
+
+			return false;
+
+		} else if (inTarget.exists()) {
+
+			return true;
+		}
+
+		return inTarget.getParentFile().mkdirs();
 	}
 	
 	/**
@@ -712,5 +814,217 @@ public abstract class Utils {
 		theSize = theSize.divide(Utils.BD_1024, 10, RoundingMode.HALF_UP);
 
 		return theSize.setScale(2, RoundingMode.HALF_UP).toPlainString() + " PB";
+	}
+	
+	// --------------------
+	// Streams
+	// --------------------
+	
+	@SafeVarargs
+	public static <T> Stream<T> toStream(T... inValues) {
+		
+		final List<T> theItems = new ArrayList<>( inValues == null ? 0 : inValues.length );
+		
+		if ( inValues != null ) {
+			for (T anItem : inValues) {
+				theItems.add( anItem );
+			}
+		}
+
+		return theItems.stream();
+	}
+
+	@SafeVarargs
+	public static <T> Stream<T> toParallelStream(T... inValues) {
+		
+		final List<T> theItems = new ArrayList<>( inValues == null ? 0 : inValues.length );
+		
+		if ( inValues != null ) {
+			for (T anItem : inValues) {
+				theItems.add( anItem );
+			}
+		}
+		
+		return theItems.parallelStream();
+	}
+	
+	// --------------------
+	// stuff
+	// --------------------
+	
+	public static long evaluateMemoryUsages(Object... inObjects) {
+		long theResult = 0;
+		if (inObjects != null) {
+			for (final Object o : inObjects) {
+				theResult += evaluateMemoryUsage(o);
+			}
+		}
+		return theResult;
+	}
+	
+	public static long evaluateMemoryUsages(Collection<?> inObjects) {
+		long theResult = 0;
+		if (inObjects != null) {
+			for (final Object o : inObjects) {
+				theResult += evaluateMemoryUsage(o);
+			}
+		}
+		return theResult;
+	}
+
+	/**
+	 * http://www.javamex.com/tutorials/memory/object_memory_usage.shtml
+	 * 
+	 * @param inObject
+	 * @return
+	 */
+	public static long evaluateMemoryUsage(Object inObject) {
+
+		if (inObject == null) {
+			return 0L;
+		}
+
+		final Wrapper<Long> theResult = new Wrapper<Long>(0L);
+		final Wrapper<Long> theCurrentObjectSize = new Wrapper<Long>(0L);
+		final Set<Object> scannedObjects = new HashSet<Object>();
+		final List<Object> theQueue = new ArrayList<Object>();
+		theQueue.add(inObject);
+
+		while (!theQueue.isEmpty()) {
+
+			final Object theObject = theQueue.remove(0);
+
+			try {
+
+				if (scannedObjects.contains(theObject)) {
+
+					// object was referenced but also scanned
+					continue;
+				}
+
+			} catch (final Throwable e) {
+
+				theResult.value += 8;
+				continue;
+			}
+
+			try {
+
+				scannedObjects.add(theObject);
+
+			} catch (final Throwable e) {
+				// swallow
+			}
+
+			theCurrentObjectSize.value = 8L;
+
+			final Class<?> theObjectsClass = theObject.getClass();
+
+			if (theObject.getClass().isArray()) {
+
+				theCurrentObjectSize.value += 4;
+
+				final int len = Array.getLength(theObject);
+				for (int i = 0; i < len; i++) {
+
+					final Object anArrayObject = Array.get(theObject, i);
+
+					try {
+
+						if (anArrayObject != null && !scannedObjects.contains(anArrayObject)) {
+
+							theQueue.add(anArrayObject);
+						}
+
+					} catch (final Throwable e) {
+						// TODO: handle exception
+					}
+				}
+
+			} else {
+
+				try {
+
+					ReflectionUtils.traversFieldHierarchy(theObjectsClass, new FieldHandler() {
+
+						{
+							handleStatic = false;
+						}
+
+						@Override
+						public boolean doHandle(Field inField) {
+
+							Object theValue = null;
+
+							try {
+
+								theValue = ReflectionUtils.getFieldValue(inField, theObject);
+
+							} catch (IllegalArgumentException | IllegalAccessException e) {
+
+								// swallow
+							}
+
+							try {
+
+								if (theValue == null || scannedObjects.contains(theValue)) {
+
+									return true;
+								}
+
+							} catch (final Throwable e) {
+								// swallow
+								return true;
+							}
+
+							final Class<?> theClass = theValue.getClass();
+
+							if (theClass.isPrimitive()) {
+
+								if (theClass == boolean.class || theClass == byte.class) {
+
+									theCurrentObjectSize.value += 1;
+
+								} else if (theClass == char.class || theClass == short.class) {
+
+									theCurrentObjectSize.value += 2;
+
+								} else if (theClass == int.class || theClass == float.class) {
+
+									theCurrentObjectSize.value += 4;
+
+								} else if (theClass == long.class || theClass == double.class) {
+
+									theCurrentObjectSize.value += 8;
+
+								}
+
+							} else {
+
+								theQueue.add(theValue);
+							}
+
+							return true;
+						}
+
+					});
+
+				} catch (final Throwable e) {
+					// swallow
+				}
+			} // eof if-else array vs plain object
+
+			// add padding
+			final int leftToFull8 = 8 - (int) (theCurrentObjectSize.value % 8);
+			if (leftToFull8 != 8) {
+
+				theCurrentObjectSize.value += leftToFull8;
+			}
+
+			theResult.value += theCurrentObjectSize.value;
+
+		} // eof while queue
+
+		return theResult.value;
 	}
 }

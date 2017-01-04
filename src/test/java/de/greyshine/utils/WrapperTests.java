@@ -3,9 +3,7 @@ package de.greyshine.utils;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.greyshine.utils.Wrapper;
-
-public class UtilsTests {
+public class WrapperTests {
 	
 	final Object o = new Object() {
 		final long time = System.currentTimeMillis();
@@ -39,5 +37,7 @@ public class UtilsTests {
 		
 		Assert.assertEquals( "ueoeaeUeOeAesse" , s2);
 	}
+	
+	
 
 }

@@ -21,7 +21,10 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import de.greyshine.utils.FieldHandler;
+import de.greyshine.utils.IFieldHandler;
 import de.greyshine.utils.Utils.IHandler;
+import de.greyshine.utils.Wrapper;
 
 public abstract class ReflectionUtils {
 
@@ -488,7 +491,7 @@ public abstract class ReflectionUtils {
 			throw new UnsupportedOperationException("Not yet implemented to travers interfaces");
 		}
 
-		final Utils.Wrapper<Boolean> theWrapper = new Utils.Wrapper<Boolean>(false);
+		final Wrapper<Boolean> theWrapper = new Wrapper<Boolean>(false);
 
 		traversClassHierarchy(inClass, new IClassHandler() {
 
@@ -698,7 +701,7 @@ public abstract class ReflectionUtils {
 			return theAnnotation;
 		}
 
-		final Utils.Wrapper<T> theResult = new Utils.Wrapper<>();
+		final Wrapper<T> theResult = new Wrapper<>();
 
 		traversClassHierarchy(inMethod.getDeclaringClass(), new IClassHandler() {
 
@@ -870,7 +873,7 @@ public abstract class ReflectionUtils {
 			throw new UnsupportedOperationException("Not yet implemented");
 		}
 
-		final Utils.Wrapper<T> theResult = new Utils.Wrapper<>();
+		final Wrapper<T> theResult = new Wrapper<>();
 
 		traversClassHierarchy(inClass, new IClassHandler() {
 
@@ -1042,7 +1045,7 @@ public abstract class ReflectionUtils {
 		
 		final Class<?>[] theParameterTypes = inParameterTypes != null ? inParameterTypes : Utils.EMPTY_CLASSES;
 		
-		final Utils.Wrapper<Method> theMethod = new Utils.Wrapper<>();
+		final Wrapper<Method> theMethod = new Wrapper<>();
 		
 		traversMethodHierarchy(inClass, new IMethodHandler() {
 
