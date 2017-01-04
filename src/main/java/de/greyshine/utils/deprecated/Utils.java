@@ -2912,7 +2912,6 @@ public abstract class Utils {
 	}
 
 	public static String getReadableDataSize(Long inSize) {
-
 		return toStringDataSize(inSize);
 	}
 

@@ -67,6 +67,10 @@ public class MapBuilder<K, V> {
 		return map;
 	}
 	
+	/**
+	 * @param inModifiable whether to build an unmodifyable map
+	 * @return the newly created {@link Map}
+	 */
 	public Map<K, V> get(boolean inModifiable) {
 		return inModifiable ? map : Collections.unmodifiableMap( map );
 	}

@@ -5,7 +5,7 @@ import java.util.function.Function;
 
 public class Wrapper<T> {
 	
-	public T value;
+	public volatile T value;
 	
 	public Wrapper() {}
 	public Wrapper(T inValue) {
@@ -18,6 +18,15 @@ public class Wrapper<T> {
 	
 	public void set(T value) {
 		this.value = value;
+	}
+	
+	public T value() {
+		return value;
+	}
+
+	public Wrapper<T> value(T inValue) {
+		value = inValue;
+		return this;
 	}
 	
 	public T getValue() {

@@ -16,7 +16,7 @@ public class UtilsTests {
 	};
 	
 	@Test
-	public void testUtilsWrapper() {
+	public void utilsWrapper() {
 		
 		final Wrapper<Object> w = Utils.wrapper( o );
 		Assert.assertTrue( w.value == o );
@@ -29,9 +29,15 @@ public class UtilsTests {
 		w.consume( v -> { result.set( v ); } );
 		
 		Assert.assertEquals( o, result.value );
+	}
+	
+	@Test
+	public void replaceCharactersWithDiacritics() {
 		
+		String s1 = "üöäÜÖÄßé";
+		String s2 = Utils.replaceCharactersWithDiacritics( s1 );
 		
-		
+		Assert.assertEquals( "ueoeaeUeOeAesse" , s2);
 	}
 
 }
