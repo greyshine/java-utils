@@ -37,6 +37,8 @@ import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
+import de.greyshine.utils.ReflectionUtils;
+
 public abstract class GsonUtils {
 	
 	private final static Log LOG = LogFactory.getLog(GsonUtils.class);

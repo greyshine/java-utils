@@ -1,12 +1,16 @@
 package de.greyshine.utils;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.lang.reflect.Array;
@@ -14,6 +18,8 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,8 +42,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import de.greyshine.utils.deprecated.ReflectionUtils;
 
 
 public abstract class Utils {
@@ -209,7 +213,7 @@ public abstract class Utils {
 		return inValue == null ? inDefault : inValue;
 	}
 	
-	public RuntimeException toRuntimeException(Exception e) {
+	public static RuntimeException toRuntimeException(Exception e) {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
 	}
 	
@@ -383,10 +387,42 @@ public abstract class Utils {
 		}
 	}
 	
+	public static List<String> readFileToLines(String inFile, String inCharset) throws IOException {
+		return inFile == null ? new ArrayList<>(0) : readFileToLines(new File(inFile), inCharset);
+	} 
+	public static List<String> readFileToLines(File inFile, String inCharset) throws IOException {
+		return inFile == null ? new ArrayList<>(0) : readFileToLines(inFile, inCharset== null ? null : Charset.forName( inCharset ));
+	} 
+	
+	public static List<String> readFileToLines(String inFile, Charset inCharset) throws IOException {
+		return inFile == null ? new ArrayList<>(0) : readFileToLines(new File(inFile), inCharset);
+	} 
+	public static List<String> readFileToLines(File inFile, Charset inCharset) throws IOException {
+		
+		if ( !isFile(inFile) ) { return null; }
+		
+		inCharset = defaultIfNull(inCharset, Charset.defaultCharset() );
+		
+		final List<String> theLines = new ArrayList<>();
+
+		try ( BufferedReader r = new BufferedReader( new InputStreamReader( new FileInputStream( inFile ) , inCharset ) ) )  {
+		
+			while( r.ready() ) {
+				theLines.add( r.readLine() );
+			}
+		} 
+		
+		return theLines;
+	} 
+	
 
 	// -------------------
 	// Stream related
 	// -------------------
+	public static final int EOF_STREAM = -1;
+	
+	public static final OutputStream DEV0 = new OutputStream() {@Override public void write(int arg0) throws IOException {} };
+	
 	public static void close(Closeable inCloseable) {
 		close(inCloseable, false);
 	}
@@ -403,7 +439,6 @@ public abstract class Utils {
 
 		} catch (final Exception e) {}
 	}
-	
 	
 	// -------------------
 	// InputStream related
@@ -440,53 +475,6 @@ public abstract class Utils {
 
 			flush((Writer) inOut);
 		}
-	}
-	
-	//
-	// interfaces
-	//
-	
-	/**
-	 * Interface indicating to handle an object and re-inform about further processing
-	 * 
-	 * @param <T>
-	 */
-	public static interface IHandler<T> {
-
-		/**
-		 * 
-		 * @param inObject
-		 * @param inIdx
-		 * @return <code>true</code> when handling should be continued, otherwise <code>false</code>
-		 */
-		boolean handle(T inObject, int inIdx);
-
-		/**
-		 * 
-		 * @param inIdx
-		 * @param inException
-		 * @param inObject
-		 * @return <code>true</code> when handling should be continued, otherwise <code>false</code>
-		 */
-		boolean handleException(int inIdx, Exception inException, T inObject);
-
-		void done(int inHandles);
-	}
-	
-	/**
-	 * Handler for handling items of a {@link Map}
-	 * 
-	 * 
-	 * @param <S>
-	 * @param <T>
-	 */
-	public static interface IMapHandler<S, T> {
-
-		boolean handle(S inKey, T inValue);
-
-		boolean handleException(S inKey, Exception inException, T inValue);
-
-		void done(int inHandles);
 	}
 	
 	//
@@ -557,6 +545,155 @@ public abstract class Utils {
 	    inText = DIACRITICS_AND_FRIENDS.matcher( inText ).replaceAll("");
 	    
 		return inText;
+	}
+	
+	// -------------------------
+	// digesting
+	// -------------------------
+	public static String getMd5(File inValue) {
+
+		if (inValue == null || !inValue.exists()) {
+			return null;
+		} else if (inValue.isDirectory()) {
+			throw new IllegalArgumentException("file is directory: " + inValue );
+		}
+
+		InputStream theIs = null;
+
+		try {
+
+			return getMd5(theIs = new FileInputStream(inValue));
+
+		} catch (final FileNotFoundException e) {
+
+			throw toRuntimeException(e);
+
+		} finally {
+
+			close(theIs);
+		}
+	}
+
+	public static String getMd5(String inValue) {
+
+		return inValue == null ? null : getMd5(new ByteArrayInputStream(inValue.getBytes()));
+	}
+
+	public static String getMd5(InputStream in) {
+
+		try {
+
+			return getDigest("MD5", in);
+
+		} catch (final Exception e) {
+
+			throw toRuntimeException(e);
+		}
+	}
+
+	public static String getSha1(String inValue) {
+
+		return inValue == null ? null : getSha1(new ByteArrayInputStream(inValue.getBytes()));
+	}
+
+	public static String getSha1(File inFile) throws IOException {
+
+		if (inFile == null) {
+
+			return null;
+
+		} else if (!inFile.isFile()) {
+
+			throw new IllegalArgumentException("file is no file: " + inFile);
+		}
+
+		final InputStream theIs = new FileInputStream(inFile);
+
+		try {
+
+			return getSha1(theIs);
+
+		} finally {
+
+			close(theIs);
+		}
+	}
+
+	public static String getSha1(InputStream in) {
+
+		try {
+
+			return getDigest("SHA-1", in);
+
+		} catch (final Exception e) {
+
+			throw toRuntimeException(e);
+		}
+	}
+
+	public static String getSha256(String inValue) {
+		
+		return inValue == null ? null : getSha256(new ByteArrayInputStream(inValue.getBytes()));
+	}
+	
+	public static String getSha256(File inFile) throws IOException {
+		
+		if (inFile == null) {
+			
+			return null;
+			
+		} else if (!inFile.isFile()) {
+			
+			throw new IllegalArgumentException("file is no file: " + inFile);
+		}
+		
+		final InputStream theIs = new FileInputStream(inFile);
+		
+		try {
+			
+			return getSha256(theIs);
+			
+		} finally {
+			
+			close(theIs);
+		}
+	}
+	
+	public static String getSha256(InputStream in) {
+		
+		try {
+			
+			return getDigest("SHA-256", in);
+			
+		} catch (final Exception e) {
+			
+			throw toRuntimeException(e);
+		}
+	}
+
+	public static String getDigest(String inAlgorithm, InputStream inIs) throws IOException, NoSuchAlgorithmException {
+
+		final byte[] bytes = new byte[1024 * 4];
+
+		final MessageDigest md = MessageDigest.getInstance(inAlgorithm);
+		while (inIs.available() > 0) {
+
+			final int r = inIs.read(bytes);
+
+			for (int i = 0; i < r; i++) {
+
+				md.update(bytes[i]);
+			}
+		}
+
+		final byte[] theHashBytes = md.digest();
+		// converting byte array to Hexadecimal String
+		final StringBuilder sb = new StringBuilder(2 * theHashBytes.length);
+		for (final byte b : theHashBytes) {
+			sb.append(String.format("%02x", b & 0xff));
+		}
+
+		return sb.toString();
 	}
 	
 	// --------

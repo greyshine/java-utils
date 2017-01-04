@@ -84,26 +84,4 @@ public class MapBuilder<K, V> {
 
 		return (Set<V>) map.values();
 	}
-
-	public void forEach(final IHandler<K, V> inHandler) throws Exception {
-
-		if (inHandler == null) {
-			return;
-		}
-
-		final int theSize = map.size();
-		int theItem = 0;
-		
-		for (final Map.Entry<K, V> anEntry : map.entrySet()) {
-
-			inHandler.handle(theItem++, theSize, anEntry.getKey(), anEntry.getValue());
-		}
-	}
-	
-	public interface IHandler<K, V> {
-
-		void handle(int inItem, int inSize, K inKey, V inValue) throws Exception;
-	}
-
-
 }

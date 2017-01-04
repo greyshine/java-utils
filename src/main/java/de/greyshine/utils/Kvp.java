@@ -4,6 +4,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Simple key value wrapper.
+ * 
+ *
+ * @param <S>
+ * @param <T>
+ */
 public class Kvp<S, T> {
 	
 	@SuppressWarnings("rawtypes")
@@ -26,27 +33,28 @@ public class Kvp<S, T> {
 	}
 
 	public S getKey() {
-
 		return key;
 	}
 
 	public T getValue() {
-
 		return value;
 	}
 
 	public T setValue(T inValue) {
-
 		final T theOldValue = value;
 		value = inValue;
 		return theOldValue;
+	}
+	
+	public boolean isNullValue() {
+		return value == null;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + ((key == null)   ? 0 : key.hashCode());
 		result = prime * result + ((value == null) ? 0 : value.hashCode());
 		return result;
 	}

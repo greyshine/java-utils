@@ -47,25 +47,4 @@ public class SetBuilder<T> {
 		return s;
 		
 	}
-	
-	public void forEach(final IHandler<T> inHandler) throws Exception {
-
-		if (inHandler == null) {
-			return;
-		}
-
-		final int theSize = set.size();
-		int theItem = 0;
-		
-		for (final T anEntry : set) {
-
-			inHandler.handle(theItem++, theSize, anEntry);
-		}
-	}
-	
-	public interface IHandler<T> {
-
-		void handle(int inItem, int inSize, T inValue) throws Exception;
-	}
-	
 }

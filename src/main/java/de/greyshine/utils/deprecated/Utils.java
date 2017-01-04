@@ -69,9 +69,11 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.JsonToken;
 
 import de.greyshine.utils.FieldHandler;
+import de.greyshine.utils.IHandler;
+import de.greyshine.utils.IMapHandler;
+import de.greyshine.utils.IdentitySet;
 import de.greyshine.utils.MapBuilder;
-import de.greyshine.utils.Utils.IHandler;
-import de.greyshine.utils.Utils.IMapHandler;
+import de.greyshine.utils.ReflectionUtils;
 import de.greyshine.utils.Wrapper;
 import de.greyshine.utils.deprecated.IFileTraverser.Traverser;
 
@@ -81,7 +83,7 @@ public abstract class Utils {
 
 	public static final int EOF_STREAM = -1;
 
-	public static OutputStream DEV0 = new OutputStream() {
+	public static final OutputStream DEV0 = new OutputStream() {
 		@Override
 		public void write(int arg0) throws IOException {
 		}

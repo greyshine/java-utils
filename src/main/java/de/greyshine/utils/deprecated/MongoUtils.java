@@ -17,6 +17,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
+import de.greyshine.utils.ReflectionUtils;
+
 public abstract class MongoUtils {
 
 	private static final Log LOG = LogFactory.getLog(MongoUtils.class);
