@@ -28,16 +28,5 @@ public class WrapperTests {
 		
 		Assert.assertEquals( o, result.value );
 	}
-	
-	@Test
-	public void replaceCharactersWithDiacritics() {
-		
-		String s1 = "üöäÜÖÄßé";
-		String s2 = Utils.replaceCharactersWithDiacritics( s1 );
-		
-		Assert.assertEquals( "ueoeaeUeOeAesse" , s2);
-	}
-	
-	
 
 }
