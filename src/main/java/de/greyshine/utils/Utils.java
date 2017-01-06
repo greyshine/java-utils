@@ -185,6 +185,14 @@ public abstract class Utils {
 		return !equals(inO1, inO2, true);
 	}
 	
+	public static boolean isBlank(String inValue) {
+		return inValue == null || inValue.trim().isEmpty();
+	}
+	
+	public static boolean isNotBlank(String inValue) {
+		return !isBlank(inValue);
+	}
+	
 	public static <T> T defaultIfNull(T inValue, T inDefault) {
 		return inValue == null ? inDefault : inValue;
 	}
@@ -415,6 +423,48 @@ public abstract class Utils {
 		return theLines;
 	} 
 	
+	public static long copy(InputStream inInputStream, OutputStream inOutputStream, boolean inCloseStreams)
+			throws IOException {
+
+		return copy(inInputStream, inOutputStream, inCloseStreams, inCloseStreams);
+	}
+
+	public static long copy(InputStream inInputStream, OutputStream inOutputStream, boolean inCloseInputStream,
+			boolean inCloseOutputStream) throws IOException {
+
+		try {
+
+			return copy(inInputStream, inOutputStream);
+
+		} finally {
+
+			if (inCloseInputStream) {
+
+				close(inInputStream);
+			}
+
+			if (inCloseOutputStream) {
+
+				close(inOutputStream);
+			}
+		}
+	}
+
+	public static long copy(InputStream inInputStream, OutputStream inOutputStream) throws IOException {
+		//
+		final byte[] buffer = new byte[4 * 1024];
+
+		long count = 0;
+		int n = 0;
+		while (EOF_STREAM != (n = inInputStream.read(buffer))) {
+			inOutputStream.write(buffer, 0, n);
+			count += n;
+		}
+
+		inOutputStream.flush();
+		return count;
+	}
+	
 
 	// -------------------
 	// Stream related
@@ -509,7 +559,7 @@ public abstract class Utils {
 		return inJson == null ? null : (inPrettyPrint ? DEFAULT_JSON_2_STRING_PRETTYPRINT : DEFAULT_JSON_2_STRING).toJson( inJson );
 	}
 
-	public static InputStream jsonAsInputStream(JsonObject inJson, boolean inPrettyPrint) {
+	public static InputStream jsonAsInputStream(JsonElement inJson, boolean inPrettyPrint) {
 		return inJson == null ? null : new ByteArrayInputStream( jsonAsString(inJson, inPrettyPrint).getBytes() );
 	}
 
