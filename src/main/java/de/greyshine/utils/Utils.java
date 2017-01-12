@@ -12,11 +12,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,6 +36,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -301,6 +305,58 @@ public abstract class Utils {
 		return theCauses;
 	}
 	
+	/**
+	 * 
+	 * trying to fetch data from the following resources
+	 * 
+	 * CLASSPATH,
+	 * FILE,
+	 * URL
+	 * 
+	 * @param inResource
+	 * @return
+	 */
+	public static InputStream getResource(String inResource) {
+		
+		if ( inResource == null ) { return null; }
+		
+		InputStream theIs = null;
+		
+		try {
+			theIs = Thread.currentThread().getContextClassLoader().getResourceAsStream( inResource );
+		} catch (Exception e) {
+			// swallow
+		}
+
+		try {
+			theIs = theIs != null ? theIs : new FileInputStream( new File( inResource ) );
+		} catch (Exception e) {
+			// swallow
+		}
+
+		try {
+			theIs = theIs != null ? theIs : new URL(inResource).openStream();
+		} catch (Exception e) {
+			// swallow
+		}
+		
+		return theIs;
+	}
+	
+	public static String castToString(Object inValue) {
+		return cast( inValue, (String)null );
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T cast(Object inValue, T inDefault) {
+		try {
+			return (T)inValue;
+		} catch (Exception e) {
+			return inDefault;
+		}
+		
+	}
+	
 	// ------------
 	// File related
 	// ------------
@@ -309,8 +365,16 @@ public abstract class Utils {
 		return inFile != null && inFile.isFile();
 	}
 	
-	public static boolean isDir(File inFile) {
-		return inFile != null && inFile.isDirectory();
+	public static boolean isNoFile(File inFile) {
+		return !isFile(inFile);
+	}
+	
+	public static boolean isDir(File inDir) {
+		return inDir != null && inDir.isDirectory();
+	}
+	
+	public static boolean isNoDir(File inDir) {
+		return !isDir(inDir);
 	}
 	
 	public static String getFileType(File inFile) {
@@ -1007,33 +1071,28 @@ public abstract class Utils {
 	// Streams
 	// --------------------
 	
-	@SafeVarargs
-	public static <T> Stream<T> toStream(T... inValues) {
-		
-		final List<T> theItems = new ArrayList<>( inValues == null ? 0 : inValues.length );
-		
-		if ( inValues != null ) {
-			for (T anItem : inValues) {
-				theItems.add( anItem );
-			}
+	public static final Predicate<String> PREDICATE_STRING_NOTBLANK = new Predicate<String>() {
+		@Override
+		public boolean test(String t) {
+			return Utils.isNotBlank( t );
 		}
-
-		return theItems.stream();
+	};
+	@SuppressWarnings("rawtypes")
+	public static final Predicate<?> PREDICATE_NOTNULL = new Predicate() {
+		@Override
+		public boolean test(Object t) {
+			return t != null;
+		}
+	};
+	
+	public static <T> void forEach(T[] inArray, Consumer<T> inConsumer ) {
+		forEach( inArray, inConsumer );
+	}
+	public static <T> void forEach(T[] inArray, Consumer<T> inConsumer, Predicate<T> inPredicate ) {
+		if ( inArray == null || inConsumer == null ) { return; }
+		Stream.of( inArray ).filter( inPredicate == null ? inPredicate : i -> {return true;} ).forEach( inConsumer );
 	}
 
-	@SafeVarargs
-	public static <T> Stream<T> toParallelStream(T... inValues) {
-		
-		final List<T> theItems = new ArrayList<>( inValues == null ? 0 : inValues.length );
-		
-		if ( inValues != null ) {
-			for (T anItem : inValues) {
-				theItems.add( anItem );
-			}
-		}
-		
-		return theItems.parallelStream();
-	}
 	
 	// --------------------
 	// stuff
@@ -1213,5 +1272,20 @@ public abstract class Utils {
 		} // eof while queue
 
 		return theResult.value;
+	}
+
+	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
+		
+		inCharset = defaultIfNull(inCharset, CHARSET_UTF8);
+		
+		final Reader r = new InputStreamReader( inputStream, inCharset);
+		
+		final StringBuilder theSb = new StringBuilder();
+		
+		while( r.ready() ) {
+			theSb.append( (char)r.read() );
+		}
+		
+		return theSb.toString();
 	}
 }

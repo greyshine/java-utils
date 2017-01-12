@@ -9,17 +9,17 @@ public interface IFileTraverser {
 
 	final static Log LOG = LogFactory.getLog(IFileTraverser.class);
 
-	boolean start(File inBaseFile);
+	default boolean start(File inBaseFile) { return true; }
 
-	void end(int inDirsProcessed, int inFilesProcessed, boolean isCancelled, Exception inLastException);
+	default void end(int inDirsProcessed, int inFilesProcessed, boolean isCancelled, Exception inLastException) {}
 
-	boolean handleDirStart(File inDir) throws Exception;
+	default boolean handleDirStart(File inDir) throws Exception { return true; }
 
-	boolean handleDirEnd(File inDir) throws Exception;
+	default boolean handleDirEnd(File inDir) throws Exception {return true;}
 
-	boolean handleFile(File inFile) throws Exception;
+	default boolean handleFile(File inFile) throws Exception {return true;};
 
-	boolean handleException(File inFile, boolean isStart, boolean isEnd, Exception inException);
+	default boolean handleException(File inFile, boolean isStart, boolean isEnd, Exception inException) {throw inException instanceof RuntimeException ? (RuntimeException)inException : new RuntimeException(inException);}
 
 	/**
 	 * Traversers only the files in the very first directory
@@ -29,7 +29,7 @@ public interface IFileTraverser {
 		public final boolean isQuitOnException;
 		private Exception exception = null;
 		private boolean isFirstDirectory = true;
-
+		
 		public FlatDirectoryFilesTraverser() {
 
 			this(true);
