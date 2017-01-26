@@ -8,12 +8,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.Writer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -365,12 +365,20 @@ public abstract class Utils {
 		return inFile != null && inFile.isFile();
 	}
 	
+	public static boolean isFile(String inFilePath) {
+		return isNotBlank( inFilePath ) && isFile( new File( inFilePath ) );
+	}
+	
 	public static boolean isNoFile(File inFile) {
 		return !isFile(inFile);
 	}
 	
 	public static boolean isDir(File inDir) {
 		return inDir != null && inDir.isDirectory();
+	}
+	
+	public static boolean isDir(String inDirPath) {
+		return isNotBlank( inDirPath ) && isDir( new File( inDirPath ) );
 	}
 	
 	public static boolean isNoDir(File inDir) {
@@ -434,17 +442,28 @@ public abstract class Utils {
 		}
 	}
 	
+	/**
+	 * @param inTargetFile
+	 * @return the target file if the parent dir exists, otherwise <code>null</code>
+	 */
+	public static File mkParentDirs(String inTargetFile) {
+		if ( isBlank( inTargetFile ) ) { return null; }
+		final File theFile = new File( inTargetFile );
+		mkParentDirs( theFile );
+		return isDir( theFile.getParentFile() ) ? theFile : null;
+	}
+
 	public static boolean mkParentDirs(File inTarget) {
-
+		
 		if (inTarget == null) {
-
+			
 			return false;
-
+			
 		} else if (inTarget.exists()) {
-
+			
 			return true;
 		}
-
+		
 		return inTarget.getParentFile().mkdirs();
 	}
 	
@@ -543,8 +562,8 @@ public abstract class Utils {
 	
 	public static void close(Closeable inCloseable, boolean inFlush) {
 
-		if (inFlush) {
-			flush(inCloseable);
+		if (inFlush && inCloseable instanceof Flushable) {
+			flush((Flushable)inCloseable);
 		}
 
 		try {
@@ -555,39 +574,17 @@ public abstract class Utils {
 	}
 	
 	// -------------------
-	// InputStream related
+	// Stream related
 	// -------------------
 
-	public static void flush(OutputStream inOutputStream) {
+	public static void flush(Flushable inStream) {
 
 		try {
 
-			inOutputStream.flush();
+			inStream.flush();
 
 		} catch (final IOException e) {
 			// swallow
-		}
-	}
-
-	public static void flush(Writer inWriter) {
-
-		try {
-
-			inWriter.flush();
-
-		} catch (final IOException e) {
-			// swallow
-		}
-	}
-
-	public static void flush(Object inOut) {
-
-		if (inOut instanceof OutputStream) {
-
-			flush((OutputStream) inOut);
-		} else if (inOut instanceof Writer) {
-
-			flush((Writer) inOut);
 		}
 	}
 	
@@ -1274,6 +1271,23 @@ public abstract class Utils {
 		return theResult.value;
 	}
 
+	public static String readToString(String inFile, Charset inCharset) throws IOException {
+		
+		if ( !isFile(inFile) ) { return null; }
+		
+		try(FileInputStream fis = new FileInputStream( inFile )) {
+			return readToString( fis, inCharset);
+		}
+	}
+	public static String readToString(File inFile, Charset inCharset) throws IOException {
+		
+		if ( !isFile(inFile) ) { return null; }
+		
+		try(FileInputStream fis = new FileInputStream( inFile )) {
+			return readToString( fis, inCharset);
+		}
+	}
+	
 	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
 		
 		inCharset = defaultIfNull(inCharset, CHARSET_UTF8);
