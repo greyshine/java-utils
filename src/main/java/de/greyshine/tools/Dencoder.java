@@ -18,7 +18,7 @@ import org.apache.commons.cli.ParseException;
 import de.greyshine.utils.Utils;
 
 @SuppressWarnings({ "static-access", "deprecation" })
-public class AlphabetStreamer {
+public class Dencoder {
 	
 	static final CommandLineParser CLI_PARSER = new DefaultParser();
 	final static Options CLI_OPTIONS = new Options();
@@ -49,8 +49,8 @@ public class AlphabetStreamer {
 		}
 	}
 	
-	static void printHelp(  ) {
-		new HelpFormatter().printHelp("stream", CLI_OPTIONS );		
+	private static void printHelp(  ) {
+		new HelpFormatter().printHelp("dencode", CLI_OPTIONS );		
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -112,7 +112,7 @@ public class AlphabetStreamer {
 		};
 	}
 
-	private static void encode(CommandLine cli) throws Exception {
+	public static void encode(CommandLine cli) throws Exception {
 		
 		boolean isInputFile = cli.hasOption( 'f' );
 		boolean isOutputFile = cli.hasOption( 'o' );
@@ -135,7 +135,7 @@ public class AlphabetStreamer {
 			
 			r = thePwdIter == null ? r : r ^ thePwdIter.next();
 			
-			String theHex = Integer.toHexString( r ); 
+			String theHex = Integer.toString( r,  Character.MAX_RADIX ); 
 			
 			if ( theHex.length() < 2 ) {
 				theHex = "0"+theHex;
@@ -160,7 +160,7 @@ public class AlphabetStreamer {
 		if ( isOutputFile ) { Utils.close(os); }
 	}
 	
-	private static void decode(InputStream is, OutputStream os, String password) throws IOException {
+	public static void decode(InputStream is, OutputStream os, String password) throws IOException {
 		
 		Iterator<Integer> thePwdIter = createPasswordIterator( password );
 		
@@ -169,7 +169,7 @@ public class AlphabetStreamer {
 			int r1 = is.read(); 
 			int r2 = is.read(); 
 			
-			int r = Integer.parseInt((char)r1 +""+ (char)r2, 16);
+			int r = Integer.parseInt((char)r1 +""+ (char)r2, Character.MAX_RADIX);
 			
 			r = thePwdIter == null ? r : r ^ thePwdIter.next();
 			

@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import de.greyshine.utils.Utils;
 
-public class AlphabetStreamerTest {
+public class DencoderTest {
 	
 	@Test
 	public void testSimple() throws Exception {
@@ -26,7 +26,7 @@ public class AlphabetStreamerTest {
 				"-o", out1.getAbsolutePath()
 		};
 		
-		AlphabetStreamer.main( theArgs );
+		Dencoder.main( theArgs );
 		
 		theArgs = new String[] {
 				"-d",
@@ -34,7 +34,7 @@ public class AlphabetStreamerTest {
 				"-o", out2.getAbsolutePath()
 		};
 		
-		AlphabetStreamer.main( theArgs );
+		Dencoder.main( theArgs );
 		
 		Assert.assertEquals( "Hallo Welt! * Hello World! * Allo la monde!" , Utils.readToString( out2, Charset.defaultCharset() ));
 	}
@@ -56,7 +56,7 @@ public class AlphabetStreamerTest {
 				"-p", "passwort"
 		};
 		
-		AlphabetStreamer.main( theArgs );
+		Dencoder.main( theArgs );
 		
 		theArgs = new String[] {
 				"-d",
@@ -65,7 +65,7 @@ public class AlphabetStreamerTest {
 				"-p", "passwort"
 		};
 		
-		AlphabetStreamer.main( theArgs );
+		Dencoder.main( theArgs );
 		
 		Assert.assertEquals( "Hallo Welt! * Hello World! * Allo la monde!" , Utils.readToString( out4, Charset.defaultCharset() ));
 	}

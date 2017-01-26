@@ -29,7 +29,7 @@
 				<!-- http://stackoverflow.com/a/15799254 -->
 				<executions>
 					<execution>
-						<id>build-publisher</id>
+						<id>build-publisher-characterscanner</id>
 						<configuration>
 							<appendAssemblyId>false</appendAssemblyId>
 							<archive>
@@ -41,6 +41,25 @@
 								<descriptorRef>jar-with-dependencies</descriptorRef>
 							</descriptorRefs>
 							<finalName>greyshine.characterscanner-${project.version}</finalName>
+						</configuration>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>build-publisher-dencoder</id>
+						<configuration>
+							<appendAssemblyId>false</appendAssemblyId>
+							<archive>
+								<manifest>
+									<mainClass>de.greyshine.tools.Dencoder</mainClass>
+								</manifest>
+							</archive>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+							<finalName>greyshine.dencoder-${project.version}</finalName>
 						</configuration>
 						<phase>package</phase>
 						<goals>

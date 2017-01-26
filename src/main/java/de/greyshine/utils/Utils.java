@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -506,6 +507,38 @@ public abstract class Utils {
 		return theLines;
 	} 
 	
+	public static String readToString(String inFile, Charset inCharset) throws IOException {
+		
+		if ( !isFile(inFile) ) { return null; }
+		
+		try(FileInputStream fis = new FileInputStream( inFile )) {
+			return readToString( fis, inCharset);
+		}
+	}
+	public static String readToString(File inFile, Charset inCharset) throws IOException {
+		
+		if ( !isFile(inFile) ) { return null; }
+		
+		try(FileInputStream fis = new FileInputStream( inFile )) {
+			return readToString( fis, inCharset);
+		}
+	}
+	
+	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
+		
+		inCharset = defaultIfNull(inCharset, CHARSET_UTF8);
+		
+		final Reader r = new InputStreamReader( inputStream, inCharset);
+		
+		final StringBuilder theSb = new StringBuilder();
+		
+		while( r.ready() ) {
+			theSb.append( (char)r.read() );
+		}
+		
+		return theSb.toString();
+	}
+	
 	public static long copy(InputStream inInputStream, OutputStream inOutputStream, boolean inCloseStreams)
 			throws IOException {
 
@@ -548,9 +581,148 @@ public abstract class Utils {
 		return count;
 	}
 	
+	// --------------------------
+	// Parsing
+	// --------------------------
+	public static boolean isParseableBoolean(String string) {
+
+		return parseBoolean(string) != null;
+	}
+
+	public static Boolean parseBoolean(String inString) {
+
+		try {
+
+			if ("true".equalsIgnoreCase(inString)) {
+
+				return true;
+
+			} else if ("false".equalsIgnoreCase(inString)) {
+
+				return false;
+			}
+
+		} catch (final Exception e) {
+		}
+
+		return null;
+	}
+
+	public static Boolean parseBoolean(String inString, Boolean inDefault) {
+
+		return defaultIfNull(parseBoolean(inString), inDefault);
+	}
+
+	public static Float parseFloat(String inString) {
+
+		return parseFloat(inString, null);
+	}
+
+	public static Float parseFloat(String inString, Float inDefault) {
+
+		try {
+
+			return new BigDecimal(inString.trim()).floatValue();
+
+		} catch (final Exception e) {
+		}
+
+		return inDefault;
+	}
+
+	public static Long parseLong(String inString) {
+
+		return parseLong(inString, null);
+	}
+
+	public static boolean isParseableLong(String string) {
+
+		return parseLong(string, null) != null;
+	}
+
+	public static Long parseLong(String inString, Long inDefault) {
+
+		try {
+
+			return Long.parseLong(inString.trim());
+
+		} catch (final Exception e) {
+
+		}
+
+		return inDefault;
+	}
+
+	public static boolean isParseableInteger(String string) {
+
+		return parseInteger(string) != null;
+	}
+
+	public static Integer parseInteger(String inString) {
+
+		return parseInteger(inString, null);
+	}
+
+	public static Integer parseInteger(String inString, Integer inDefault) {
+
+		try {
+
+			return new BigDecimal(inString.trim()).setScale(0, RoundingMode.DOWN).intValue();
+
+		} catch (final Exception e) {
+
+		}
+
+		return inDefault;
+	}
+
+	public static boolean isParseableBigDecimal(String string) {
+
+		return parseBigDecimal(string) != null;
+	}
+
+	public static BigDecimal parseBigDecimal(String inString) {
+
+		return parseBigDecimal(inString, null);
+	}
+
+	public static BigDecimal parseBigDecimal(String inString, BigDecimal inDefault) {
+
+		try {
+
+			return new BigDecimal(inString);
+
+		} catch (final Exception e) {
+
+			return inDefault;
+		}
+	}
+
+	public static boolean isParseableCharacter(String string) {
+
+		return parseCharacter(string) != null;
+	}
+
+	public static Character parseCharacter(String inString) {
+
+		return parseCharacter(inString, null);
+	}
+
+	public static Character parseCharacter(String inString, Character inDefault) {
+
+		Character c = inDefault;
+
+		if (inString != null && inString.length() == 1) {
+
+			c = inString.charAt(0);
+		}
+
+		return c;
+	}
+	
 
 	// -------------------
-	// Stream related
+	// IOStream related
 	// -------------------
 	public static final int EOF_STREAM = -1;
 	
@@ -573,10 +745,6 @@ public abstract class Utils {
 		} catch (final Exception e) {}
 	}
 	
-	// -------------------
-	// Stream related
-	// -------------------
-
 	public static void flush(Flushable inStream) {
 
 		try {
@@ -806,6 +974,70 @@ public abstract class Utils {
 
 		return sb.toString();
 	}
+	
+	public static int getHash(String inValue) {
+
+		if (inValue == null) {
+			return -1;
+		}
+
+		return Integer.parseInt(getHash(inValue, 6, ALPHABET_0to9));
+	}
+
+	public static String getHash(String inValue, int inLen, String inAlphabet) {
+
+		try {
+
+			return inValue == null ? null : getHash(inValue.getBytes("UTF-8"), inLen, inAlphabet.toCharArray());
+
+		} catch (final UnsupportedEncodingException e) {
+
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static String getHash(byte[] inValues, int inLen, char[] inAlphabet) {
+
+		if (inLen < 1 || inAlphabet.length == 0 || inValues == null || inValues.length < 1) {
+
+			return "";
+		}
+
+		// System.out.println("inValues.length=" + inValues.length);
+		// System.out.println("inAlphabet.length=" + inAlphabet.length);
+
+		final char[] theChars = new char[inLen];
+		int idxValues = 0;
+		final int theAmtIters = Math.max(inValues.length, theChars.length);
+
+		for (int i = 0; i < theAmtIters; i++, idxValues++) {
+
+			// System.out.println("\ni=" + i);
+
+			idxValues = idxValues % inValues.length == 0 ? 0 : idxValues;
+
+			final int idxHash = i % theChars.length;
+			idxValues = idxValues == inValues.length ? 0 : idxValues;
+
+			// System.out.println("idxValues=" + idxValues);
+			// System.out.println("idxHash=" + idxHash);
+
+			int idxAlphabet = inValues[idxValues] * (i + 1) * 13;
+
+			idxAlphabet *= 1 + i + theChars[idxHash == 0 ? theChars.length - 1 : idxHash - 1];
+
+			idxAlphabet = Math.abs(idxAlphabet) % inAlphabet.length;
+			// System.out.println("idxAlphabet.final=" + idxAlphabet);
+			final char theChar = inAlphabet[idxAlphabet];
+
+			theChars[idxHash] = theChar;
+		}
+
+		System.out.println("\n");
+		return new String(theChars);
+	}
+	
+	
 	
 	// --------
 	// REGEX
@@ -1065,7 +1297,7 @@ public abstract class Utils {
 	}
 	
 	// --------------------
-	// Streams
+	// Java8-Streams
 	// --------------------
 	
 	public static final Predicate<String> PREDICATE_STRING_NOTBLANK = new Predicate<String>() {
@@ -1269,37 +1501,5 @@ public abstract class Utils {
 		} // eof while queue
 
 		return theResult.value;
-	}
-
-	public static String readToString(String inFile, Charset inCharset) throws IOException {
-		
-		if ( !isFile(inFile) ) { return null; }
-		
-		try(FileInputStream fis = new FileInputStream( inFile )) {
-			return readToString( fis, inCharset);
-		}
-	}
-	public static String readToString(File inFile, Charset inCharset) throws IOException {
-		
-		if ( !isFile(inFile) ) { return null; }
-		
-		try(FileInputStream fis = new FileInputStream( inFile )) {
-			return readToString( fis, inCharset);
-		}
-	}
-	
-	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
-		
-		inCharset = defaultIfNull(inCharset, CHARSET_UTF8);
-		
-		final Reader r = new InputStreamReader( inputStream, inCharset);
-		
-		final StringBuilder theSb = new StringBuilder();
-		
-		while( r.ready() ) {
-			theSb.append( (char)r.read() );
-		}
-		
-		return theSb.toString();
 	}
 }
