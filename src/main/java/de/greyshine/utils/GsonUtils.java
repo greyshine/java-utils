@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.List;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
@@ -39,11 +42,11 @@ public abstract class GsonUtils {
 	private GsonUtils() {
 	}
 	
-	public static JsonArray toArray(Collection<String> inStrings) {
-		return toArray( inStrings, false );
+	public static JsonArray toJsonArray(Collection<String> inStrings) {
+		return toJsonArray( inStrings, false );
 	}
 	
-	public static JsonArray toArray(Collection<String> inStrings, final boolean inSkipNulls) {
+	public static JsonArray toJsonArray(Collection<String> inStrings, final boolean inSkipNulls) {
 		
 		return inStrings == null ? new JsonArray() : inStrings.stream().collect( JsonArray::new, (inJa, inString) -> {
 			
@@ -54,6 +57,28 @@ public abstract class GsonUtils {
 			inJa.add( inString == null ? JsonNull.INSTANCE : new JsonPrimitive( inString ) );
 			
 		}, (inJa, inString) -> {} );
+	}
+
+	public static JsonArray toArray(Collection<? extends JsonElement> inValues) {
+		return toArray(inValues,false);
+	}
+	
+	public static JsonArray toArray(Collection<? extends JsonElement> inValues, final boolean inSkipNulls) {
+		
+		final JsonArray ja = new JsonArray();
+		
+		if ( inValues == null ) { return ja; }
+		
+		inValues.stream().forEach( (i) -> { 
+			
+			if ( i==null && inSkipNulls ) { return; }
+			else if ( i==null ) { ja.add( JsonNull.INSTANCE ); }
+			else {
+				ja.add( i );
+			}
+		} );
+		
+		return ja;
 	}
 	
 }
