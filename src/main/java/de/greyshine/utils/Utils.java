@@ -14,17 +14,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,6 +44,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import javax.sound.midi.Instrument;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -1157,9 +1162,63 @@ public abstract class Utils {
 
 			theChars[idxHash] = theChar;
 		}
-
-		System.out.println("\n");
+		
 		return new String(theChars);
+	}
+	
+	public static String toBase64(byte[] inBytes) {
+		return inBytes == null ? null : new String(Base64.getEncoder().encode( inBytes ));	
+	}
+	
+	public static String toBase64(InputStream inIs, boolean inCloseStream) throws IOException {
+		
+		final StringWriter w = new StringWriter();
+		
+		final OutputStream os = Base64.getEncoder().wrap( new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {
+				w.append( (char)b );
+			}
+		} );
+		
+		Utils.copy(inIs, os);
+		
+		if ( inCloseStream ) {
+			close(inIs);
+		}
+		
+		return w.toString();
+	}
+
+	public static InputStream toBase64AsInpuStream(InputStream inIs, boolean inCloseStream) throws IOException {
+		
+		final List<Integer> bytes = new ArrayList<>();
+		 
+		final OutputStream os = Base64.getEncoder().wrap( new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {
+				synchronized ( bytes ) {
+					bytes.add( b );
+				}
+			}
+		} );
+		
+		Utils.copy(inIs, os);
+		
+		if ( inCloseStream ) {
+			close(inIs);
+		}
+		
+		return new InputStream() {
+			@Override
+			public int read() throws IOException {
+				return bytes.size() < 1 ? -1 : bytes.remove(0);
+			}
+		};
+	}
+	
+	public static String toBase64(InputStream resourceAsStream) throws IOException {
+		return toBase64(resourceAsStream, false);
 	}
 	
 	
