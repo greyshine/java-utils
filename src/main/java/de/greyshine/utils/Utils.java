@@ -2,6 +2,7 @@ package de.greyshine.utils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,8 +21,8 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -45,16 +46,28 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import javax.sound.midi.Instrument;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-
 public abstract class Utils {
+	
+	public static final String BASEPATH = getCanonicalFile(new File("."), false).getAbsolutePath(); 
+	public static final String BASEURL = executeQuietly( new IExecuter<String>() {
+		public String run() { 
+			try {
+				return new File( BASEPATH ).toURI().toURL().toString();
+			} catch (MalformedURLException e) {
+				throw toRuntimeException(e);
+			}
+		}
+		@Override
+		public RuntimeException handleException(Throwable inThrowable) {
+			return toRuntimeException(inThrowable);
+		}
+	}); 
 	
 	public static final Class<?>[] EMPTY_CLASSES = new Class<?>[0];
 	public static final Object[] EMPTY_OBJECTS = new Object[0];
@@ -313,7 +326,7 @@ public abstract class Utils {
 		return (inValue = inValue.trim()).isEmpty() ? inDefault : inValue; 
 	}
 	
-	public static RuntimeException toRuntimeException(Exception e) {
+	public static RuntimeException toRuntimeException(Throwable e) {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
 	}
 	
@@ -443,6 +456,10 @@ public abstract class Utils {
 		}
 		
 		return theIs;
+	}
+	
+	public static byte[] getResourceAsBytes(String inResource) throws IOException {
+		return toBytes( getResource(inResource) );
 	}
 	
 	public static String castToString(Object inValue) {
@@ -884,6 +901,17 @@ public abstract class Utils {
 		} catch (final IOException e) {
 			// swallow
 		}
+	}
+	
+	private static byte[] toBytes(InputStream inInputStream) throws IOException {
+		return toBytes(inInputStream, true);
+	}
+	
+	private static byte[] toBytes(InputStream inInputStream, boolean inCloseInputStream) throws IOException {
+		if ( inInputStream == null ) { return null; }
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		copy( inInputStream, baos, true, true );
+		return baos.toByteArray();
 	}
 	
 	//
@@ -1689,7 +1717,14 @@ public abstract class Utils {
 
 	public interface IExecuter<T> {
 		T run();
-		default void handleException(Throwable t) {};
+		/**
+		 * Any thrown {@link Exception} will be handled as the return value of the method and will be rethrown as a {@link RuntimeException}.<br/>
+		 * Defaults to returnin <tt>null</tt>
+		 * 
+		 * @param inThrowable the {@link Exception} previously thrown by the run method
+		 * @return if not <tt>null</tt> the result value will be rethrown as a {@link RuntimeException}
+		 */
+		default RuntimeException handleException(Throwable inThrowable) { return null; };
 	}
 	
 	public static <T> T executeQuietly(IExecuter<T> inExecution) {
@@ -1707,13 +1742,17 @@ public abstract class Utils {
 			return inExecution.run();
 			
 		} catch (Throwable t) {
+
+			Throwable t2 = null;
 			
 			try {
-				
-				inExecution.handleException(t);
-				
+				t2 = inExecution.handleException(t);
 			} catch (Exception e) {
-				// swallow
+				t2 = e;
+			}
+			
+			if ( t2 != null ) {
+				throw toRuntimeException(t2);
 			}
 		}
 		
