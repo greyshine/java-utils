@@ -1,3 +1,6 @@
+[![Build status](https://travis-ci.org/greyshine/java-utils.svg?branch=master)](https://travis-ci.org/greyshine/java-utils)
+[![Coverage Status](https://coveralls.io/repos/github/greyshine/java-utils/badge.svg?branch=master)](https://coveralls.io/github/greyshine/java-utils?branch=master)
+
 # java-utils
 
 My Java utilities collection.

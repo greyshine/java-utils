@@ -2,6 +2,7 @@ package de.greyshine.utils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,17 +15,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -49,8 +53,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-
 public abstract class Utils {
+	
+	public static final String BASEPATH = getCanonicalFile(new File("."), false).getAbsolutePath(); 
+	public static final String BASEURL = executeQuietly( new IExecuter<String>() {
+		public String run() { 
+			try {
+				return new File( BASEPATH ).toURI().toURL().toString();
+			} catch (MalformedURLException e) {
+				throw toRuntimeException(e);
+			}
+		}
+		@Override
+		public RuntimeException handleException(Throwable inThrowable) {
+			return toRuntimeException(inThrowable);
+		}
+	}); 
 	
 	public static final Class<?>[] EMPTY_CLASSES = new Class<?>[0];
 	public static final Object[] EMPTY_OBJECTS = new Object[0];
@@ -118,8 +136,7 @@ public abstract class Utils {
 			.get(true);
 	
 	/**
-	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-
-	 * empty
+	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-empty
 	 */
 	public final static String REGEX_NOT_EMPTY = ".*\\S.*";
 	public final static Pattern PATTERN_NOT_EMPTY = Pattern.compile( REGEX_NOT_EMPTY );
@@ -309,7 +326,7 @@ public abstract class Utils {
 		return (inValue = inValue.trim()).isEmpty() ? inDefault : inValue; 
 	}
 	
-	public static RuntimeException toRuntimeException(Exception e) {
+	public static RuntimeException toRuntimeException(Throwable e) {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
 	}
 	
@@ -439,6 +456,10 @@ public abstract class Utils {
 		}
 		
 		return theIs;
+	}
+	
+	public static byte[] getResourceAsBytes(String inResource) throws IOException {
+		return toBytes( getResource(inResource) );
 	}
 	
 	public static String castToString(Object inValue) {
@@ -1019,6 +1040,17 @@ public abstract class Utils {
 		}
 	}
 	
+	private static byte[] toBytes(InputStream inInputStream) throws IOException {
+		return toBytes(inInputStream, true);
+	}
+	
+	private static byte[] toBytes(InputStream inInputStream, boolean inCloseInputStream) throws IOException {
+		if ( inInputStream == null ) { return null; }
+		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		copy( inInputStream, baos, true, true );
+		return baos.toByteArray();
+	}
+	
 	//
 	// Json / Gson releated
 	//
@@ -1295,9 +1327,63 @@ public abstract class Utils {
 
 			theChars[idxHash] = theChar;
 		}
-
-		System.out.println("\n");
+		
 		return new String(theChars);
+	}
+	
+	public static String toBase64(byte[] inBytes) {
+		return inBytes == null ? null : new String(Base64.getEncoder().encode( inBytes ));	
+	}
+	
+	public static String toBase64(InputStream inIs, boolean inCloseStream) throws IOException {
+		
+		final StringWriter w = new StringWriter();
+		
+		final OutputStream os = Base64.getEncoder().wrap( new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {
+				w.append( (char)b );
+			}
+		} );
+		
+		Utils.copy(inIs, os);
+		
+		if ( inCloseStream ) {
+			close(inIs);
+		}
+		
+		return w.toString();
+	}
+
+	public static InputStream toBase64AsInpuStream(InputStream inIs, boolean inCloseStream) throws IOException {
+		
+		final List<Integer> bytes = new ArrayList<>();
+		 
+		final OutputStream os = Base64.getEncoder().wrap( new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {
+				synchronized ( bytes ) {
+					bytes.add( b );
+				}
+			}
+		} );
+		
+		Utils.copy(inIs, os);
+		
+		if ( inCloseStream ) {
+			close(inIs);
+		}
+		
+		return new InputStream() {
+			@Override
+			public int read() throws IOException {
+				return bytes.size() < 1 ? -1 : bytes.remove(0);
+			}
+		};
+	}
+	
+	public static String toBase64(InputStream resourceAsStream) throws IOException {
+		return toBase64(resourceAsStream, false);
 	}
 	
 	
@@ -1790,7 +1876,14 @@ public abstract class Utils {
 	
 	public interface IExecuter<T> {
 		T run();
-		default void handleException(Throwable t) {};
+		/**
+		 * Any thrown {@link Exception} will be handled as the return value of the method and will be rethrown as a {@link RuntimeException}.<br/>
+		 * Defaults to returnin <tt>null</tt>
+		 * 
+		 * @param inThrowable the {@link Exception} previously thrown by the run method
+		 * @return if not <tt>null</tt> the result value will be rethrown as a {@link RuntimeException}
+		 */
+		default RuntimeException handleException(Throwable inThrowable) { return null; };
 	}
 	
 	public static <T> T executeQuietly(IExecuter<T> inExecution) {
@@ -1808,13 +1901,17 @@ public abstract class Utils {
 			return inExecution.run();
 			
 		} catch (Throwable t) {
+
+			Throwable t2 = null;
 			
 			try {
-				
-				inExecution.handleException(t);
-				
+				t2 = inExecution.handleException(t);
 			} catch (Exception e) {
-				// swallow
+				t2 = e;
+			}
+			
+			if ( t2 != null ) {
+				throw toRuntimeException(t2);
 			}
 		}
 		

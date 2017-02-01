@@ -1,0 +1,6 @@
+language: java
+
+# see https://github.com/softwaresaved/build_and_test_examples/blob/master/travis/Languages.md
+jdk:
+  - oraclejdk8
+#  - openjdk8 # disabled, does not exist: https://github.com/travis-ci/travis-ci/issues/6483
