@@ -38,6 +38,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -457,10 +458,49 @@ public abstract class Utils {
 		}
 	}
 	
-	public static <T> T getIndexedValueSafe(List<T> inValues, int inIndex, T inDefault) {
+	/**
+	 * 
+	 * Be aware that a {@link Set} might not be ordered (probably most of the times)!
+	 * 
+	 * @param inValues
+	 * @param inIndex negative index is checked from the end of the collection
+	 * @param inDefault
+	 * @return
+	 */
+	public static <T> T getIndexedValueSafe(Set<T> inValues, int inIndex, T inDefault) {
 		
 		try {
 			
+			inIndex = inIndex >= 0 ? inIndex : inValues.size() + inIndex;
+			
+			int i = -1;
+			for (T v : inValues) {
+				
+				i++;
+				if ( i == inIndex ) {
+					return v;
+				}
+				
+			}
+			
+		} catch (Exception e) {
+			// swallow
+		}
+		
+		return inDefault;
+	}
+	/**
+	 * 
+	 * @param inValues
+	 * @param inIndex negative index is checked from the end of the collection
+	 * @param inDefault
+	 * @return
+	 */
+	public static <T> T getIndexedValueSafe(List<T> inValues, int inIndex, T inDefault) {
+		
+		try {
+		
+			inIndex = inIndex >= 0 ? inIndex : inValues.size() + inIndex;
 			return inValues.get( inIndex );
 			
 		} catch (Exception e) {
@@ -474,6 +514,7 @@ public abstract class Utils {
 		
 		try {
 			
+			inIndex = inIndex >= 0 ? inIndex : inValues.length + inIndex;
 			return inValues[inIndex];
 			
 		} catch (Exception e) {
@@ -499,6 +540,17 @@ public abstract class Utils {
 		return !isFile(inFile);
 	}
 	
+	public static boolean isDirectory(File inDir) {
+		return isDir( inDir );
+	}
+	public static boolean isDirectory(String inDir) {
+		return isDir( inDir );
+	}
+	/**
+	 * Same as isDirectory()
+	 * @param inDir
+	 * @return
+	 */
 	public static boolean isDir(File inDir) {
 		return inDir != null && inDir.isDirectory();
 	}
@@ -663,6 +715,92 @@ public abstract class Utils {
 		
 		return theSb.toString();
 	}
+	
+	/**
+	 * List files in the give directory. no further traversing into sub directories.
+	 * @param inFile
+	 * @return
+	 */
+	public static List<File> list(File inFile) {
+
+		if ( !Utils.isDir(inFile) ) {
+
+			return new ArrayList<File>(0);
+
+		}
+
+		final List<File> theFiles = new ArrayList<File>(0);
+
+		for (final File aFile : defaultIfNull(inFile.listFiles(), EMPTY_FILES)) {
+
+			theFiles.add(aFile);
+		}
+
+		Collections.sort(theFiles, FILE_COMPARATOR);
+
+		return theFiles;
+	}
+
+	/**
+	 * List all {@link File}s (not directories) in the given directory.
+	 * 
+	 * @param inFile
+	 * @return
+	 */
+	public static List<File> listFiles(File inDir, boolean inTraversSubDirectories) {
+
+		if (inDir == null || !inDir.isDirectory()) {
+
+			return new ArrayList<File>(0);
+
+		}
+
+		final List<File> theFiles = new ArrayList<File>(0);
+
+		for (final File aFile : defaultIfNull(inDir.listFiles(), EMPTY_FILES)) {
+
+			if (aFile.isFile()) {
+
+				theFiles.add(aFile);
+			}
+		}
+
+		Collections.sort(theFiles, FILE_COMPARATOR);
+
+		return theFiles;
+	}
+
+	/**
+	 * List all directories within the given directory.
+	 * 
+	 * @param inDir
+	 *            root dir
+	 * @return
+	 */
+	public static List<File> listDirectorys(File inDir, boolean inTraversSubDirectories) {
+
+		if (inDir == null || !inDir.isDirectory()) {
+
+			return new ArrayList<File>(0);
+
+		}
+
+		final List<File> theFiles = new ArrayList<File>(0);
+
+		for (final File aFile : defaultIfNull(inDir.listFiles(), EMPTY_FILES)) {
+
+			if (aFile.isDirectory()) {
+
+				theFiles.add(aFile);
+			}
+		}
+
+		Collections.sort(theFiles, FILE_COMPARATOR);
+
+		return theFiles;
+	}
+	
+	// 
 	
 	public static long copy(InputStream inInputStream, OutputStream inOutputStream, boolean inCloseStreams)
 			throws IOException {
@@ -1628,13 +1766,35 @@ public abstract class Utils {
 		return theResult.value;
 	}
 
+ 	public static <T,U> U executeQuietly( T inValue, U inDefaultResult, Function<T,U> inFunction ) {
+		
+ 		if ( inValue == null || inFunction == null ) { return inDefaultResult; }
+ 		
+ 		try {
+
+ 			return inFunction.apply( inValue );
+			
+		} catch (Exception e) {
+			// swallow
+			return inDefaultResult;
+		}
+	}
+
+ 	public static <T,U> U executeQuietly( T inValue, Function<T,U> inFunction ) {
+ 		return executeQuietly(inValue, null, inFunction);
+ 	}
+ 	
+ 	public static <T,U> U executeQuietly(Function<T,U> inFunction ) {
+ 		return executeQuietly(null, null, inFunction);
+ 	}
+	
 	public interface IExecuter<T> {
 		T run();
 		default void handleException(Throwable t) {};
 	}
 	
 	public static <T> T executeQuietly(IExecuter<T> inExecution) {
-		return executeQuietly(inExecution,null);
+		return executeQuietly((IExecuter<T>)inExecution, (T)null);
 	}
 	
 	public static <T> T executeQuietly(IExecuter<T> inExecution, T inDefaultResult) {

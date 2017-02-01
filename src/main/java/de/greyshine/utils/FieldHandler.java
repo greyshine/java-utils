@@ -14,9 +14,7 @@ public abstract class FieldHandler implements IFieldHandler {
 	protected Boolean handleProtected = null;
 	protected Class<? extends Annotation>[] annotationClasses;
 
-	public FieldHandler() {
-
-	}
+	public FieldHandler() {}
 
 	public FieldHandler(boolean handleStatic, boolean handleFinal, boolean handlePrivate, boolean handlePublic, boolean handleProtected) {
 

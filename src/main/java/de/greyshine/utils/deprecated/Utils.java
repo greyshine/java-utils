@@ -433,9 +433,14 @@ public abstract class Utils {
 		}
 	}
 
+	/**
+	 * List files in the give directory. no further traversing into sub directories.
+	 * @param inFile
+	 * @return
+	 */
 	public static List<File> list(File inFile) {
 
-		if (inFile == null || !inFile.isDirectory()) {
+		if ( !Utils.isDirectory(inFile) ) {
 
 			return new ArrayList<File>(0);
 
@@ -2581,52 +2586,6 @@ public abstract class Utils {
 		}
 
 		delete(Arrays.asList(inFiles));
-	}
-
-	/**
-	 * Will return the given file as parameter if the file is not a directory.
-	 * <br/>
-	 * Traversing the file tree will always try to go down to the first deepest
-	 * reachable file which is not a directory
-	 * 
-	 * @param inFlat
-	 *            <code>true</code> if only the files within this directory will
-	 *            be listed or <code>false</code> if it should travers down.
-	 * @return
-	 */
-	public static List<File> listFiles___(File inDir, boolean inFlat) {
-
-		if (inFlat) {
-
-			return list(inDir);
-
-		}
-
-		final List<File> theFiles = new ArrayList<File>();
-
-		if (inDir == null) {
-
-			return theFiles;
-		}
-
-		traversFiles(inDir, new Traverser() {
-
-			@Override
-			public boolean handleFile(File inFile) throws Exception {
-
-				theFiles.add(inFile);
-				return true;
-			}
-
-			@Override
-			public boolean handleDirStart(File inFile) throws Exception {
-
-				theFiles.add(inFile);
-				return true;
-			}
-		});
-
-		return theFiles;
 	}
 
 	public static boolean delete(Collection<File> inFiles) {

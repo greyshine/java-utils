@@ -20,8 +20,8 @@ import de.greyshine.utils.Utils;
 @SuppressWarnings({ "static-access", "deprecation" })
 public class Dencoder {
 	
-	static final CommandLineParser CLI_PARSER = new DefaultParser();
-	final static Options CLI_OPTIONS = new Options();
+	private static final CommandLineParser CLI_PARSER = new DefaultParser();
+	private static final Options CLI_OPTIONS = new Options();
 	
 	static {
 		
