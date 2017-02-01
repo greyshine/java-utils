@@ -1,3 +1,5 @@
+[![Build status](https://travis-ci.org/greyshine/java-utils.svg?branch=master)](https://travis-ci.org/greyshine/java-utils)
+
 # java-utils
 
 My Java utilities collection.
