@@ -3,4 +3,4 @@ language: java
 # see https://github.com/softwaresaved/build_and_test_examples/blob/master/travis/Languages.md
 jdk:
   - oraclejdk8
-  - openjdk7
+  - openjdk8
