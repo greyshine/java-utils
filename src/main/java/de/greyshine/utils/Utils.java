@@ -135,8 +135,7 @@ public abstract class Utils {
 			.get(true);
 	
 	/**
-	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-
-	 * empty
+	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-empty
 	 */
 	public final static String REGEX_NOT_EMPTY = ".*\\S.*";
 	public final static Pattern PATTERN_NOT_EMPTY = Pattern.compile( REGEX_NOT_EMPTY );
