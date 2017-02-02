@@ -10,4 +10,4 @@ jdk:
 # https://github.com/trautonen/coveralls-maven-plugin
 after_success: coveralls
   #- mvn clean test jacoco:report coveralls:report
-  - coveralls
+  #- coveralls
