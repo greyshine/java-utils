@@ -2,7 +2,12 @@ package de.greyshine.utils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
+
+import de.greyshine.utils.CommandLineParser.Option;
 
 /**
  * Helper to evaluate <tt>public static void main(String[] args)</tt>-Args
@@ -16,9 +21,6 @@ public class CommandLineParser {
 	private String usageText;
 	private String footerText;
 
-	private Option currentOption;
-	private SimpleArg currentSimpleArg;
-	
 	public class SimpleArg {
 		
 		private String name;
@@ -64,11 +66,9 @@ public class CommandLineParser {
 		private String option;
 		private String longoption;
 
-		/**
-		 * Is there the must have of a parameter to the option?<br/>
-		 */
-		private boolean isArgParameterized;
-		private String argName;
+		private String parameterName;
+		private Pattern parameterPattern;
+		
 		private String description;
 
 		/**
@@ -108,23 +108,14 @@ public class CommandLineParser {
 			return this;
 		}
 
-		public Option arg(String inArgName, Boolean isParameterized) {
-			if ( inArgName == null || inArgName.trim().isEmpty()) { throw new IllegalArgumentException("arg does not have a name"); }
-			this.argName = inArgName.trim();
-			this.isArgParameterized = isParameterized;
+		public Option parameter(String inArgParameter) {
+			if ( inArgParameter == null || inArgParameter.trim().isEmpty()) { throw new IllegalArgumentException("arg does not have a name"); }
+			this.parameterName = inArgParameter.trim();
 			return this;
 		}
 
 		public boolean isOptionParameterized() {
-			return this.isArgParameterized;
-		}
-
-		public boolean isArgOptional() {
-			return Boolean.FALSE.equals(isArgParameterized);
-		}
-
-		public boolean isArgMandatory() {
-			return Boolean.TRUE.equals(isArgParameterized);
+			return parameterName != null;
 		}
 
 		public Option description(String inDescription) {
@@ -140,6 +131,11 @@ public class CommandLineParser {
 		public CommandLineParser done() {
 			return CommandLineParser.this;
 		}
+
+		public Option regex(String inRegex) {
+			this.parameterPattern =  inRegex==null? null : Pattern.compile( inRegex );  
+			return this;
+		}
 	}
 	
 	public SimpleArg simpleArg(String inName) {
@@ -150,19 +146,23 @@ public class CommandLineParser {
 	}
 
 	public Option option(String inOption) {
-
+		return option( inOption, null );
+	}
+	
+	public Option option(String inOption, String inLongoption) {
+		
 		if (inOption == null || (inOption = inOption.trim()).isEmpty()) {
 			return null;
 		}
-
+		
 		for (Option o : options) {
-
+			
 			if (o.option.equals(inOption)) {
 				return o;
 			}
 		}
 		
-		return new Option(inOption);
+		return new Option(inOption).longoption(inLongoption);
 	}
 
 	public CommandLineParser usageText(String inUsageText) {
@@ -180,17 +180,12 @@ public class CommandLineParser {
 				usageLine += "[";
 			}
 			usageLine += "-"+ anOption.option;
-			if ( anOption.isOptional ) {
-				usageLine += "]";
+			
+			if ( anOption.parameterName != null ) {
+				usageLine += " <"+ anOption.parameterName +">";
 			}
 			
-			if ( anOption.isOptional && anOption.argName != null ) {
-				usageLine += "[";
-			}
-			if ( anOption.argName != null ) {
-				usageLine += " <"+ anOption.argName +">";
-			}
-			if ( anOption.isOptional && anOption.argName != null ) {
+			if ( anOption.isOptional ) {
 				usageLine += "]";
 			}
 		}
@@ -211,7 +206,9 @@ public class CommandLineParser {
 			int w = 1 + o.option.length();
 			// ", --longoption"
 			w += (o.longoption == null ? 0 : 4 + o.longoption.length());
-
+			
+			w += ( !o.isOptionParameterized() ? 0 : o.parameterName.length() + 3);
+			
 			return w;
 
 		}).max().orElse(0);
@@ -232,6 +229,10 @@ public class CommandLineParser {
 			String optionSubBlock = "-"+anOption.option;
 			if (anOption.longoption != null) {
 				optionSubBlock += ", --" + anOption.longoption;
+			}
+			
+			if ( anOption.isOptionParameterized() ) {
+				optionSubBlock += " <"+ anOption.parameterName +">";
 			}
 
 			while (optionSubBlock.length() < theLength) {
@@ -394,31 +395,10 @@ public class CommandLineParser {
 			
 			final List<String> vs = new ArrayList<>();
 			
-			Option theOption = null;
-			int theOptionIndex = -1;
-			for( Option o : options ) {
+			for( int i = args.length-1 ; i >= 0 ; i-- ) {
 				
-				final int theIndex = getOptionIndex( o );
-				if ( theIndex > theOptionIndex ) {
-					theOptionIndex = theIndex;
-					theOption = o;
-				}
-			}
-			
-			if ( theOption == null ) {
-				return getArgs();
-			}
-			
-			if ( Utils.isTrue(theOption.isArgParameterized) ) {
-				theOptionIndex++;
-			
-			} else if ( Utils.isFalse(theOption.isArgParameterized) && isOptionalArg( theOptionIndex+1 ) ) {
+				throw new UnsupportedOperationException("need to implement, no time right now");
 				
-				theOptionIndex++;
-			}
-			
-			for (int i = theOptionIndex+1; i < args.length; i++) {
-				vs.add( args[i] );
 			}
 			
 			return vs;
@@ -431,6 +411,15 @@ public class CommandLineParser {
 			getSimpleArgs().stream().filter(Utils::isNotBlank).map(File::new).forEach(vs::add);
 
 			return vs;
+		}
+		
+		public String getSimpleArg(int inIndex) {
+			return Utils.getIndexedValueSafe( getSimpleArgs(), inIndex, null);			
+		}
+		
+		public File getSimpleArgAsFile(int inIndex) {
+			final String theValue = getSimpleArg(inIndex);
+			return Utils.isBlank( theValue ) ? null : new File( theValue );
 		}
 
 		public int getOptionIndex(String inOption) {
@@ -463,7 +452,7 @@ public class CommandLineParser {
 		public boolean isOption(String inOption) {
 			return getOptionIndex(inOption) > -1;
 		}
-
+		
 		public String getArg(int inIndex) {
 			return getArg(inIndex, true, null);
 		}
@@ -508,10 +497,15 @@ public class CommandLineParser {
 		public String getOptionParameter(String inOption) {
 			
 			final Option theOption = lookupOption( inOption );
-			if ( theOption == null || !theOption.isArgParameterized) { return null; }
+			if ( !theOption.isOptionParameterized()) { return null; }
 			
 			final int theIndex = getOptionIndex( theOption );
-			return getArg( theIndex+1 );
+			return theIndex == -1 ? null : getArg( theIndex+1 );
 		}
+		
+		public Integer getOptionParameterAsInt(String inOption, Integer inDefault) {
+			return Utils.parseInteger(getOptionParameter(inOption), inDefault);
+		}
+		
 	}
 }

@@ -3,11 +3,15 @@ package de.greyshine.tools;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.function.Function;
 
 import de.greyshine.utils.CommandLineParser;
 import de.greyshine.utils.CommandLineParser.Args;
@@ -25,8 +29,9 @@ public class CharacterScanner {
 
 	final static CommandLineParser CLIP = new CommandLineParser()
 
-			.option( "h" ).longoption( "help" ).optional().description( "print this message" ).done()//
-			.option( "e" ).longoption( "encoding" ).optional().description( "encoding as specified by java.nio.charset.Charset namings" ).done()//
+			.option( "h", "help" ).optional().description( "print this message" ).done()//
+			.option( "charset" ).optional().parameter("charset").description( "encoding as specified by java.nio.charset.Charset namings" ).done()//
+			.option("charnum").optional().regex("[0-9]{0,3}").parameter( "number" ).description( "number of the char to scan for" ).done()
 			.simpleArg("file").optional().description( "file or dir to scan" ).done()
 			.generateUsageText( "charscan" );
 	
@@ -41,7 +46,7 @@ public class CharacterScanner {
 	
 	public static void main(String... args) throws IOException {
 		
-		args = new String[]{"-h"};
+		//args = new String[]{"-h"};
 		
 		final Args theArgs = CLIP.parse(args);
 		
@@ -50,27 +55,67 @@ public class CharacterScanner {
 			return;
 		}
 		
-		final List<String> as = theArgs.getSimpleArgs();
-		
-		char theChar = (char)Utils.parseInteger( as.get(0) ).intValue();
-		String theFile = as.size() > 1 ? as.get(1) : null; 
-		String theCharset = theArgs.getOptionParameter( "e" ); 
-		
-		if ( Utils.isBlank( theFile ) && System.in.available() == 0 ) {
-			theFile = ".";
+		Integer theChar = null;
+		if ( theArgs.isOption( "charnum" ) ) {
+			theChar = theArgs.getOptionParameterAsInt("charnum", null);
 		}
 		
-		if ( Utils.isNotBlank( theFile ) ) {
-			
-			scanStream(new File( theFile ), theCharset, theChar);
-			
-		} else {
-			
-			scanStream( System.in, theCharset, theChar );
+		String theCharset = theArgs.getOptionParameter( "charset" );
+		
+		final File theFile = Utils.defaultIfNull( theArgs.getSimpleArgAsFile(0) , Utils.BASEDIR);
+		
+		if ( theChar == null ) {
+			scanAllCharacters( theFile, theCharset );
+			return;
 		}
+		
+		scanStream( theFile , theCharset, (char)theChar.intValue() );
 	}
 
 	
+	private static void scanAllCharacters(File inFile, String inCharset) throws IOException {
+		
+		final Function<File,Boolean> f = (aFile)->{
+			
+			if ( aFile == null || !aFile.isFile() ) { return true; }
+			
+			System.out.println( Utils.getCanonicalFile( aFile ).getAbsolutePath() );
+			
+			try ( BufferedReader r = new BufferedReader( new InputStreamReader( new FileInputStream( aFile ), Utils.defaultCharset( inCharset ) ) ) ) {
+			
+				int linenum = -1;	
+				final Wrapper<Integer> index = new Wrapper<>();
+				
+				while( r.ready() ) {
+				
+					final String theLine = r.readLine(); 
+					final int theLineNum = ++linenum;
+					
+					index.value=0;
+					
+					theLine.chars().forEach( (i)->{
+						
+						System.out.println( theLineNum+" : "+ index.value++ +" : "+ i +" = "+ (char)i );
+						
+					} );
+				}
+			
+			} catch(IOException e) {
+				throw Utils.toRuntimeException(e);
+			}
+			
+			return true;
+		};
+		
+		try {
+		
+			Utils.traversFiles(inFile, f , true);
+			
+		} catch (Exception e) {
+			throw Utils.toIOException(e, true);
+		}
+	}
+
 	public static void scanStream(File inFile, String inCharset, char inTargetChar) throws IOException {
 	
 		if ( Utils.isDir( inFile ) ) {
@@ -117,35 +162,35 @@ public class CharacterScanner {
 		if ( inIs == null ) { return; }
 		
 		final Charset c = Utils.isBlank( inCharset ) ? Charset.defaultCharset() : Charset.forName( inCharset );
-		final Wrapper<Integer> position = new Wrapper<>();
-		final Wrapper<Integer> line = new Wrapper<>();
+		final Wrapper<Integer> position = new Wrapper<>(-1);
+		final Wrapper<Integer> line = new Wrapper<>(-1);
 		final Wrapper<Integer> linePosition = new Wrapper<>();
 		
 		inLinePrefix = Utils.trimToEmpty(inLinePrefix);
 		
 		final String theLinePrefix  = inLinePrefix + (inLinePrefix.endsWith(":") ? " " : ": ");
 		
-		final BufferedReader r = new BufferedReader( new InputStreamReader( inIs , c) );
-		while( r.ready() ) {
-			
-			final String theLine =r.readLine();
-			line.value++;
-			linePosition.value=-1;
-			
-			theLine.chars()
-			.peek( (i)->{ position.value++; } )
-			.mapToObj( (i)->{return (char)i; } )
-			.filter( (i)->{ return i == inTargetChar; } )
-			.forEach( (i)->{
-				linePosition.value++;
-				System.out.println( theLinePrefix + position +", "+ line.value +", "+ linePosition.value );
-			} );
-			
-		}
+		try(BufferedReader r = new BufferedReader( new InputStreamReader( inIs , c) )) {
 		
-		
-		
-		
+			while( r.ready() ) {
+				
+				final String theLine = r.readLine();
+				line.value++;
+				linePosition.value=-1;
+				
+				theLine.chars()
+				.peek( (i)->{
+					position.value++;
+					linePosition.value++;
+				} )
+				.mapToObj( (i)->{return (char)i; } )
+				.filter( (i)->{ return i == inTargetChar; } )
+				.forEach( (i)->{
+					
+					System.out.println( theLinePrefix + position.value +", "+ line.value +", "+ linePosition.value );
+				} );
+			}
+		} 
 	} 
 	
 }

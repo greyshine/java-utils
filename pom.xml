@@ -114,6 +114,16 @@
 			    <groupId>org.jacoco</groupId>
 			    <artifactId>jacoco-maven-plugin</artifactId>
 			    <version>0.7.8</version>
+			    <configuration>
+	                <excludes>
+	                    <exclude>de/greyshine/tools/*Test.java</exclude>
+	                    <exclude>de/greyshine/tools/*Tests.java</exclude>
+	                    <exclude>de/greyshine/tools/*Tester.java</exclude>
+	                    <exclude>de/greyshine/utils/*Test.java</exclude>
+	                    <exclude>de/greyshine/utils/*Tests.java</exclude>
+	                    <exclude>de/greyshine/utils/*Tester.java</exclude>
+	                </excludes>
+				</configuration>
 			    <executions>
 			        <execution>
 			            <id>prepare-agent</id>

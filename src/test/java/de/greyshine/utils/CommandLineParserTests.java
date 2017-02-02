@@ -16,8 +16,8 @@ public class CommandLineParserTests {
 		
 		final CommandLineParser theClp = new CommandLineParser();
 		theClp.option( "v1" ).longoption( "value1" );
-		theClp.option( "v2" ).arg( "v2argname", true ).description( "worx somehow" );
-		theClp.option( "v3" ).arg( "v3argname", false ).description( "worx somehow too\nmultilined\nnext line" );
+		theClp.option( "v2" ).parameter( "v2argname").description( "worx somehow" );
+		theClp.option( "v3" ).parameter( "v3argname" ).description( "worx somehow too\nmultilined\nnext line" );
 		theClp.simpleArg("rest1").description( "a must have parameter" );
 		theClp.simpleArg("rest2").multi().description( "can have parameters, but at least 1" );
 		

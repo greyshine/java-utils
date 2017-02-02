@@ -28,6 +28,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +56,8 @@ import com.google.gson.JsonParser;
 
 public abstract class Utils {
 	
-	public static final String BASEPATH = getCanonicalFile(new File("."), false).getAbsolutePath(); 
+	public static final File BASEDIR = getCanonicalFile(new File("."), false); 
+	public static final String BASEPATH = BASEDIR.getAbsolutePath(); 
 	public static final String BASEURL = executeQuietly( new IExecuter<String>() {
 		public String run() { 
 			try {
@@ -330,6 +332,39 @@ public abstract class Utils {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
 	}
 	
+	public static IOException toIOException(Throwable inThrownException, boolean inCheckCauses) {
+	
+		if ( inThrownException == null ) { return null; }
+		if ( inThrownException instanceof IOException ) { return (IOException)inThrownException; }
+		if ( inCheckCauses ) {
+			
+			final IOException ioe = findException( IOException.class, inThrownException );
+			if ( ioe != null ) { return ioe; }
+		}
+		
+		return new IOException( inThrownException );
+	}
+	
+	@SuppressWarnings("unchecked")
+	private static <T extends Throwable> T findException(Class<T> inThrowableClassToFind, Throwable inThrowable) {
+		
+		if ( inThrowable == null || inThrowableClassToFind == null ) { return null; }
+		
+		final Set<Throwable> checkedThrowables = new HashSet<>();
+		
+		while( inThrowable != null ) {
+			
+			if ( inThrowableClassToFind.isAssignableFrom( inThrowable.getClass() ) ) { return (T) inThrowable; }
+			
+			if ( checkedThrowables.contains( inThrowable ) ) { return null; }
+			checkedThrowables.add( inThrowable );
+			
+			inThrowable = inThrowable.getCause();
+		}
+		
+		return null;
+	}
+
 	public static <T> T requireNonNull(T inValue) {
 		return requireNonNull(inValue, null);
 	}
@@ -594,6 +629,11 @@ public abstract class Utils {
 		return theIdx < 0 ? null : inFile.getName().substring(theIdx + 1);
 	}
 	
+	/**
+	 * Same as <code>getCanonicalFile(File inFile, boolean inThrowRuntimeException)</code> but parameter <code>inThrowRuntimeException</code> is set to <code>false</code> 
+	 * @param inFile
+	 * @return
+	 */
 	public static File getCanonicalFile(File inFile) {
 		return getCanonicalFile(inFile, false);
 	}
@@ -638,6 +678,42 @@ public abstract class Utils {
 		} catch (final Exception e) {
 			// swallow
 			return null;
+		}
+	}
+	
+	public static void traversFiles( File inFile, Function<File, Boolean> inConsumer, boolean inContinueOnException ) {
+		
+		if ( inFile == null || inConsumer == null ) { return; }
+		
+		final List<File> q = new ArrayList<>();
+		q.add( inFile );
+		
+		while( !q.isEmpty() ) {
+			
+			final File f = q.remove(0);
+			boolean doContinue = true;
+			
+			try {
+			
+				doContinue = inConsumer.apply( f );	
+			
+			} catch (Exception e) {
+				if ( !inContinueOnException ) {
+					q.clear();
+					throw toRuntimeException(e);
+				}
+			}
+			
+			if ( !doContinue ) {
+				q.clear();
+				break;
+			}
+			
+			if ( f.isDirectory() ) {
+				
+				Stream.of( defaultIfNull( f.listFiles(), EMPTY_FILES) ).forEach( q::add );
+				continue;
+			} 
 		}
 	}
 	
@@ -1916,5 +1992,17 @@ public abstract class Utils {
 		}
 		
 		return inDefaultResult;
+	}
+
+	public static Charset defaultCharset(String inCharset) {
+		try {
+			return Charset.forName( inCharset );
+		} catch (Exception e) {
+			return Charset.defaultCharset();
+		}
+	}
+
+	public static <T> List<T> toList(T... inArgs) {
+		return inArgs == null ? new ArrayList<>(0) : new ArrayList<>( Arrays.asList( inArgs ) );
 	}
 }
