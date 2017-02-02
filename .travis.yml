@@ -8,6 +8,5 @@ jdk:
 # coveralls plugin
 # https://github.com/kbase/project_guides/blob/master/Setting_up_Travis_CI_and_Coveralls.md
 # https://github.com/trautonen/coveralls-maven-plugin
-after_success: coveralls
-  #- mvn clean test jacoco:report coveralls:report
-  #- coveralls
+after_success:
+  - coveralls
