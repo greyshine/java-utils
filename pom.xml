@@ -102,10 +102,12 @@
 		     	<!-- https://github.com/trautonen/coveralls-maven-plugin#readme -->
 			    <groupId>org.eluder.coveralls</groupId>
 			    <artifactId>coveralls-maven-plugin</artifactId>
-			    <version>4.3.0</version>
+			    <version>4.2.0</version>
+			    <!-- 
 			    <configuration>
-			        <!-- repoToken>yourcoverallsprojectrepositorytoken</repoToken  -->
+			        <repoToken>yourcoverallsprojectrepositorytoken</repoToken>
 			    </configuration>
+			    -->
 			</plugin>
 		     
 		     <plugin>
@@ -187,5 +189,12 @@
 		</dependency>
 
 	</dependencies>
+	
+	<scm>
+        <connection>scm:git:git@github.com:greyshine/utils.git</connection>
+        <developerConnection>scm:git:git@github.com:greyshine/utils.git</developerConnection>
+        <url>https://github.com/greyshine/utils</url>
+        <tag>HEAD</tag>
+	</scm>
 
 </project>
