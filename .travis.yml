@@ -4,3 +4,8 @@ language: java
 jdk:
   - oraclejdk8
 #  - openjdk8 # disabled, does not exist: https://github.com/travis-ci/travis-ci/issues/6483
+
+# https://github.com/trautonen/coveralls-maven-plugin
+after_success: 
+  #- mvn clean test jacoco:report coveralls:report
+  - coveralls
