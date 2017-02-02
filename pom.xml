@@ -90,6 +90,28 @@
 					</includes>
 				</configuration>
 			</plugin>
+			
+			<plugin>
+				<!-- http://gleclaire.github.io/findbugs-maven-plugin/usage.html -->
+		    	<groupId>org.codehaus.mojo</groupId>
+		    	<artifactId>findbugs-maven-plugin</artifactId>
+		    	<version>3.0.4</version>
+		     </plugin>
+		     
+		     <plugin>
+			    <groupId>org.jacoco</groupId>
+			    <artifactId>jacoco-maven-plugin</artifactId>
+			    <version>0.7.8</version>
+			    <executions>
+			        <execution>
+			            <id>prepare-agent</id>
+			            <goals>
+			                <goal>prepare-agent</goal>
+			            </goals>
+			        </execution>
+			    </executions>
+			</plugin>
+			
 		</plugins>
 	</build>
 
