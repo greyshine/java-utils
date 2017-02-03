@@ -328,6 +328,18 @@ public abstract class Utils {
 		return (inValue = inValue.trim()).isEmpty() ? inDefault : inValue; 
 	}
 	
+	public static String unwrap(String inValue, Character inCharacter) {
+		
+		if (inCharacter == null || inValue.length()<2) { return inValue; }
+		
+		if ( inCharacter.equals( inValue.charAt( 0 ) ) && inCharacter.equals( inValue.charAt( inValue.length()-1 ) ) ) {
+			
+			return inValue.substring(1, inValue.length()-1);
+		}
+		
+		return inValue;
+	}
+	
 	public static RuntimeException toRuntimeException(Throwable e) {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
 	}
@@ -365,6 +377,15 @@ public abstract class Utils {
 		return null;
 	}
 
+	// ---------------------
+	// Require / Validations
+	// ---------------------
+	
+	/**
+	 * @param inValue
+	 * @return
+	 */
+
 	public static <T> T requireNonNull(T inValue) {
 		return requireNonNull(inValue, null);
 	}
@@ -384,7 +405,6 @@ public abstract class Utils {
 	}
 	
 	public static void requireRegex(String inValue, String inRegex, String inMessage) {
-		
 		
 		if ( inValue == null || isNoMatch(inValue, inRegex) ) { 
 			
@@ -2002,6 +2022,12 @@ public abstract class Utils {
 		}
 	}
 
+	/**
+	 * <code>null</code>-safe array to List.
+	 * A List will always be returned.
+	 * @param inArgs
+	 * @return
+	 */
 	public static <T> List<T> toList(T... inArgs) {
 		return inArgs == null ? new ArrayList<>(0) : new ArrayList<>( Arrays.asList( inArgs ) );
 	}

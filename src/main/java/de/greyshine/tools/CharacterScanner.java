@@ -3,14 +3,10 @@ package de.greyshine.tools;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.List;
 import java.util.function.Function;
 
 import de.greyshine.utils.CommandLineParser;
@@ -79,6 +75,7 @@ public class CharacterScanner {
 			
 			if ( aFile == null || !aFile.isFile() ) { return true; }
 			
+			// System.out is intended!
 			System.out.println( Utils.getCanonicalFile( aFile ).getAbsolutePath() );
 			
 			try ( BufferedReader r = new BufferedReader( new InputStreamReader( new FileInputStream( aFile ), Utils.defaultCharset( inCharset ) ) ) ) {
@@ -95,6 +92,7 @@ public class CharacterScanner {
 					
 					theLine.chars().forEach( (i)->{
 						
+						// System.out is intended!
 						System.out.println( theLineNum+" : "+ index.value++ +" : "+ i +" = "+ (char)i );
 						
 					} );

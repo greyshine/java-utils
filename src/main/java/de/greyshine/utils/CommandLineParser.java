@@ -2,12 +2,9 @@ package de.greyshine.utils;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import de.greyshine.utils.CommandLineParser.Option;
 
 /**
  * Helper to evaluate <tt>public static void main(String[] args)</tt>-Args
@@ -21,6 +18,12 @@ public class CommandLineParser {
 	private String usageText;
 	private String footerText;
 
+	/**
+	 * A simple arg. Is not prefixed by any amount of hyphens.<br/>
+	 * Arguments passed at last with a command.<br/>
+	 * Any 'simple arg' in between of options will be ignored.<br/>
+	 * The last of the simple arguments may be set <code>multi<code>. This allows an amount of arguments which could be helpful when e.g. denoting files.
+	 */
 	public class SimpleArg {
 		
 		private String name;
@@ -61,6 +64,35 @@ public class CommandLineParser {
 		
 	}
 	
+	public boolean isDeclaredOption(String inOption) {
+		
+		for( Option o : options ) {
+			if ( o.option.equals( inOption ) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	public boolean isDeclaredLongoption(String inOption) {
+		
+		for( Option o : options ) {
+			if ( o.longoption != null && (o.longoption.equals( inOption ) || o.longoption.equals( inOption ) ) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Option is an argument out of the {@link String}-array <code>args[]</code>.<br/>
+	 * The argument is prefixed with a hyphen in the short version.<br/>
+	 * The long version is prefixed with two hyphens. Both of them are treated equally.<br/>
+	 * Depending on setting up the {@link CommandLineParser} an option may have a parameter which when registered must exist.<br/>
+	 * Me, I called it parameter beacaus calling it arg of an arg sound confusing. 
+	 */
 	public class Option {
 
 		private String option;
@@ -77,7 +109,13 @@ public class CommandLineParser {
 		private boolean isOptional = false;
 
 		private Option(String inOption) {
+			
 			option = inOption.trim();
+			
+			if ( isDeclaredOption(inOption) || isDeclaredLongoption(inOption) ) {
+				throw new IllegalArgumentException("option already declared: "+ inOption);
+			}
+			
 			options.add( this );
 		}
 
@@ -346,6 +384,8 @@ public class CommandLineParser {
 		for (Option option : options) {
 			if ( option.option.equals( inOption ) ) {
 				return option;
+			} else if ( option.longoption != null && option.longoption.equals( inOption ) ) {
+				return option;
 			}
 		}
 		return null;
@@ -362,6 +402,9 @@ public class CommandLineParser {
 	
 	public class Args {
 
+		/**
+		 * No index Will ever contain a <code>null</code> value.
+		 */
 		private final String[] args;
 		
 		public Args(String[] args) {
@@ -397,9 +440,24 @@ public class CommandLineParser {
 			
 			for( int i = args.length-1 ; i >= 0 ; i-- ) {
 				
-				throw new UnsupportedOperationException("need to implement, no time right now");
+				final String theArg = args[i];
 				
+				final Option theOption = !theArg.startsWith( "-" ) ? null : getOption( theArg );
+				
+				if ( theOption == null ) {
+					
+					vs.add( unwrap( theArg ) );
+					continue;
+				
+				} else if ( theOption.isOptionParameterized() && !vs.isEmpty()  ) {
+					
+					vs.remove( vs.size()-1 );
+				}
+				
+				break;
 			}
+			
+			Collections.reverse( vs );
 			
 			return vs;
 		}
@@ -445,7 +503,8 @@ public class CommandLineParser {
 		}
 
 		/**
-		 * 
+		 * Is the given option one of the elements of <code>args[]</code>.<br/>
+		 * Do not prefix with any hyphens!
 		 * @param inOption
 		 * @return is existing option prefixed with <tt>-</tt>
 		 */
@@ -461,6 +520,8 @@ public class CommandLineParser {
 
 			inIndex = inIndex >= 0 ? inIndex : inIndex + args.length;
 
+			if ( inIndex < 0 || inIndex >= args.length ) { return inDefaultIfBlank; }
+			
 			String theArg = null;
 
 			try {
@@ -468,7 +529,8 @@ public class CommandLineParser {
 				theArg = args[inIndex];
 				theArg = !isTrim ? theArg : theArg.trim();
 				theArg = theArg.isEmpty() ? null : theArg;
-
+				theArg = unwrap( theArg );
+				
 			} catch (Exception e) {
 				// swallow
 			}
@@ -476,17 +538,36 @@ public class CommandLineParser {
 			return theArg != null ? theArg : inDefaultIfBlank;
 		}
 		
-		public boolean isOptionalArg(int inIndexPos) {
-			return getOptionalArg(inIndexPos) != null;
+		public boolean isOption(int inIndexPos) {
+			return getOption(inIndexPos) != null;
 		}
 		
-		public Option getOptionalArg(int inIndexPos) {
+		public Option getOption(int inIndexPos) {
 			
 			final String theArg = Utils.getIndexedValueSafe(args, inIndexPos, null);
 			if ( theArg == null ) { return null; }
 			
 			for (Option o : options) {
 				if ( theArg.equals( "-"+o.option ) || theArg.equals( "--"+o.longoption ) ) {
+					return o;
+				}
+			}
+			
+			return null;
+		}
+		
+		public Option getOption(String inOption) {
+			
+			inOption = removeHyphens(inOption);
+			
+			for (Option o : options) {
+				
+				if ( o.option.equals( inOption ) ) {
+					
+					return o;
+				
+				} else if ( o.longoption != null && o.longoption.equals( inOption ) ) {
+					
 					return o;
 				}
 			}
@@ -508,4 +589,21 @@ public class CommandLineParser {
 		}
 		
 	}
+	
+	private static String removeHyphens(String inOption) {
+		
+		if ( inOption == null || !inOption.startsWith( "-" )) { return inOption; }
+		
+		return inOption.substring( inOption.startsWith( "--" ) ? 2 : 1 ); 
+	}
+	
+	private static String unwrap(String inArg) {
+		
+		if ( inArg == null ) { return inArg; }
+		
+		final String unwrapped = Utils.unwrap( inArg, '\"' ); 
+		
+		return !inArg.equals( unwrapped ) ? unwrapped : Utils.unwrap(inArg, '\'');
+	}
+	
 }

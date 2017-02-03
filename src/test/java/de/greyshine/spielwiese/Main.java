@@ -1,8 +1,8 @@
-package de.greyshine.tools;
+package de.greyshine.spielwiese;
 
 import java.util.stream.Stream;
 
-public class Spielwiese {
+public class Main {
 	
 	public static void main(String[] args) {
 		
