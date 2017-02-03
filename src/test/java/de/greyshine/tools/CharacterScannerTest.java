@@ -61,7 +61,22 @@ public class CharacterScannerTest {
 		Assert.assertTrue( theOutput.contains( "file2.txt: 7, 0, 7" ) );
 		Assert.assertTrue( theOutput.contains( "file2.txt: 15, 1, 3" ) );
 		Assert.assertTrue( theOutput.contains( "file2.txt: 17, 1, 5" ) );
+	}
+	
+	@Test
+	public void testMyMacAltSpaceProblem() throws IOException {
 		
+		final SystemStreamCatcher ssc = new SystemStreamCatcher(false);
+		CharacterScanner.main("-charset","UTF-8", "src/test/characterscanner/macspaces.txt" );
+		ssc.end();
+		
+		Assert.assertTrue( ssc.getDataSystemOutAsString().contains("2 : 0 : 160 =  ") );
+		
+		ssc.reset(false);
+		CharacterScanner.main("-charset","UTF-8", "-charnum", "160", "src/test/characterscanner/macspaces.txt" );
+		ssc.end();
+		
+		Assert.assertTrue( ssc.getDataSystemOutAsString(), ssc.getDataSystemOutAsString().trim().endsWith( File.separatorChar+"macspaces.txt: 82, 2, 0" ) );
 		
 	}
 }
