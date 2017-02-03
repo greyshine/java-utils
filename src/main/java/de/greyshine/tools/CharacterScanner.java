@@ -15,17 +15,14 @@ import de.greyshine.utils.Utils;
 import de.greyshine.utils.Wrapper;
 
 /**
- * Scans file(s) for a character which is identified by its number
- * 
- * args: <character> -e <encoding> <file>?
- * 
- * @author Dirk Schumacher
+ * Scans file(s) for a character which is identified by its number.
  */
 public class CharacterScanner {
 
 	final static CommandLineParser CLIP = new CommandLineParser()
 
 			.option( "h", "help" ).optional().description( "print this message" ).done()//
+			.option( "v" ).longoption("verbose").optional().description( "be verbose about what you are doing" ).done()//
 			.option( "charset" ).optional().parameter("charset").description( "encoding as specified by java.nio.charset.Charset namings" ).done()//
 			.option("charnum").optional().regex("[0-9]{0,3}").parameter( "number" ).description( "number of the char to scan for" ).done()
 			.simpleArg("file").optional().description( "file or dir to scan" ).done()
@@ -51,25 +48,38 @@ public class CharacterScanner {
 			return;
 		}
 		
+		final boolean isVerbose = theArgs.isOption("v");
+		
 		Integer theChar = null;
 		if ( theArgs.isOption( "charnum" ) ) {
 			theChar = theArgs.getOptionParameterAsInt("charnum", null);
 		}
 		
-		String theCharset = theArgs.getOptionParameter( "charset" );
+		
+		final Charset theCharset = Utils.defaultCharset(theArgs.getOptionParameter( "charset" ));
+		textout( isVerbose , "charset="+ theCharset);
 		
 		final File theFile = Utils.defaultIfNull( theArgs.getSimpleArgAsFile(0) , Utils.BASEDIR);
 		
 		if ( theChar == null ) {
+			
+			textout(isVerbose, "scanning file(s) at "+ Utils.getCanonicalFile( theFile ));
 			scanAllCharacters( theFile, theCharset );
 			return;
 		}
 		
-		scanStream( theFile , theCharset, (char)theChar.intValue() );
+		textout(isVerbose, "scanning for character: "+ theChar.intValue() );
+		scanStream( theFile , theCharset, (char)theChar.intValue(), isVerbose );
 	}
 
 	
-	private static void scanAllCharacters(File inFile, String inCharset) throws IOException {
+	private static void textout(boolean isVerbose, String string) {
+		if ( isVerbose ) {
+			System.out.println( string );
+		}
+	}
+
+	private static void scanAllCharacters(File inFile, Charset inCharset) throws IOException {
 		
 		final Function<File,Boolean> f = (aFile)->{
 			
@@ -78,7 +88,7 @@ public class CharacterScanner {
 			// System.out is intended!
 			System.out.println( Utils.getCanonicalFile( aFile ).getAbsolutePath() );
 			
-			try ( BufferedReader r = new BufferedReader( new InputStreamReader( new FileInputStream( aFile ), Utils.defaultCharset( inCharset ) ) ) ) {
+			try ( BufferedReader r = new BufferedReader( new InputStreamReader( new FileInputStream( aFile ), inCharset ) ) ) {
 			
 				int linenum = -1;	
 				final Wrapper<Integer> index = new Wrapper<>();
@@ -114,7 +124,7 @@ public class CharacterScanner {
 		}
 	}
 
-	public static void scanStream(File inFile, String inCharset, char inTargetChar) throws IOException {
+	public static void scanStream(File inFile, Charset inCharset, char inTargetChar, final boolean inVerboseOutput) throws IOException {
 	
 		if ( Utils.isDir( inFile ) ) {
 
@@ -129,8 +139,9 @@ public class CharacterScanner {
 			
 			try {
 				Utils.listFiles(inFile, true).forEach( (f)->{
+					
 					try {
-						scanStream( f, inCharset, inTargetChar );
+						scanStream( f, inCharset, inTargetChar, inVerboseOutput );
 					} catch (IOException e) {
 						throw new Rte(e);
 					}
@@ -145,21 +156,23 @@ public class CharacterScanner {
 			return;
 		}
 		
+		textout(inVerboseOutput, "scanning file: "+ inFile);
+		
 		try ( InputStream is = new FileInputStream( inFile ) ) {
-			
 			scanStream( is , inCharset, inTargetChar, Utils.getCanonicalFile(inFile).getAbsolutePath());
 		} 
 	}
 	
-	public static void scanStream(InputStream inIs, String inCharset, char inTargetChar) throws IOException {
+	public static void scanStream(InputStream inIs, Charset inCharset, char inTargetChar) throws IOException {
 		scanStream(inIs, inCharset, inTargetChar, null);
 	}
 	
-	public static void scanStream(InputStream inIs, String inCharset, char inTargetChar, String inLinePrefix) throws IOException {
+	public static void scanStream(InputStream inIs, Charset inCharset, char inTargetChar, String inLinePrefix) throws IOException {
 		
 		if ( inIs == null ) { return; }
 		
-		final Charset c = Utils.isBlank( inCharset ) ? Charset.defaultCharset() : Charset.forName( inCharset );
+		inCharset = Utils.defaultIfNull( inCharset, Charset.defaultCharset());
+		
 		final Wrapper<Integer> position = new Wrapper<>(-1);
 		final Wrapper<Integer> line = new Wrapper<>(-1);
 		final Wrapper<Integer> linePosition = new Wrapper<>();
@@ -168,7 +181,7 @@ public class CharacterScanner {
 		
 		final String theLinePrefix  = inLinePrefix + (inLinePrefix.endsWith(":") ? " " : ": ");
 		
-		try(BufferedReader r = new BufferedReader( new InputStreamReader( inIs , c) )) {
+		try(BufferedReader r = new BufferedReader( new InputStreamReader( inIs , inCharset) )) {
 		
 			while( r.ready() ) {
 				
