@@ -517,6 +517,13 @@ public abstract class Utils {
 		return toBytes( getResource(inResource) );
 	}
 	
+	public static String getResourceAsString(String inResource, Charset inCharset) throws IOException {
+		try (InputStream is = getResource(inResource)) {
+			return readToString( is , inCharset);
+		} 
+	}
+	
+	
 	public static String castToString(Object inValue) {
 		return cast( inValue, (String)null );
 	}
@@ -818,9 +825,26 @@ public abstract class Utils {
 		}
 	}
 	
+	/**
+	 * Same as read to String
+	 * @param inputStream
+	 * @param inCharset
+	 * @return
+	 * @throws IOException
+	 */
+	public static String inputStreamToString(InputStream inputStream, Charset inCharset, boolean inCloseInputStream) throws IOException {
+		try {
+			return readToString(inputStream, inCharset);	
+		} finally {
+			if ( inCloseInputStream ) {
+				close( inputStream );
+			}
+		}
+	}
+	
 	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
 		
-		inCharset = defaultIfNull(inCharset, CHARSET_UTF8);
+		inCharset = defaultIfNull(inCharset, Charset.defaultCharset());
 		
 		final Reader r = new InputStreamReader( inputStream, inCharset);
 		
@@ -841,9 +865,7 @@ public abstract class Utils {
 	public static List<File> list(File inFile) {
 
 		if ( !Utils.isDir(inFile) ) {
-
 			return new ArrayList<File>(0);
-
 		}
 
 		final List<File> theFiles = new ArrayList<File>(0);
@@ -2030,5 +2052,9 @@ public abstract class Utils {
 	 */
 	public static <T> List<T> toList(T... inArgs) {
 		return inArgs == null ? new ArrayList<>(0) : new ArrayList<>( Arrays.asList( inArgs ) );
+	}
+
+	public static String markdownToHtml(String inMarkdown) {
+		return ShowdownTransformer.toHtml(inMarkdown);
 	}
 }
