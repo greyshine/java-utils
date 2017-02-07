@@ -127,6 +127,8 @@ public abstract class Utils {
 	
 	public static final Pattern DIACRITICS_AND_FRIENDS = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
 	
+	public static final boolean NEVER_CLOSE_STANDARD_STREAMS = true;
+	
 	public static Map<String,String> UMLAUT_REPLACEMENTS = new MapBuilder<String,String>()//
 			.put("\u00E4", "ae")//
 			.put("\u00F6", "oe")//
@@ -610,6 +612,21 @@ public abstract class Utils {
 	// ------------
 	// File related
 	// ------------
+	
+	public static File toFile(String inFile) {
+		return toFile( inFile, true, true );
+	}
+	
+	public static File toFile(String inFile, boolean inReturnFile, boolean inReturnDir) {
+		
+		if ( isBlank(inFile) ) { return null; }
+		final File f = new File( inFile );
+		
+		if ( inReturnFile == false && isFile( f ) ) { return null; }
+		if ( inReturnDir == false && isDir( f ) ) { return null; }
+		
+		return f;
+	}
 
 	public static boolean isFile(File inFile) {
 		return inFile != null && inFile.isFile();
@@ -1128,7 +1145,7 @@ public abstract class Utils {
 	// -------------------
 	public static final int EOF_STREAM = -1;
 	
-	public static final OutputStream DEV0 = new OutputStream() {@Override public void write(int arg0) throws IOException {} };
+	public static final OutputStream DEV0 = new OutputStream() {@Override public void write(int arg0) throws IOException {}; public String toString() { return "DEV0-OutputStream"; } };
 	
 	public static void close(Closeable inCloseable) {
 		close(inCloseable, false);
@@ -1142,6 +1159,10 @@ public abstract class Utils {
 
 		try {
 
+			if ( NEVER_CLOSE_STANDARD_STREAMS && (inCloseable == System.out || inCloseable == System.err || inCloseable == System.in) ) {
+				return;
+			}
+			
 			inCloseable.close();
 
 		} catch (final Exception e) {}
@@ -1158,16 +1179,18 @@ public abstract class Utils {
 		}
 	}
 	
-	private static byte[] toBytes(InputStream inInputStream) throws IOException {
+	public static byte[] toBytes(InputStream inInputStream) throws IOException {
 		return toBytes(inInputStream, true);
 	}
 	
-	private static byte[] toBytes(InputStream inInputStream, boolean inCloseInputStream) throws IOException {
+	public static byte[] toBytes(InputStream inInputStream, boolean inCloseInputStream) throws IOException {
 		if ( inInputStream == null ) { return null; }
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		copy( inInputStream, baos, true, true );
 		return baos.toByteArray();
 	}
+	
+
 	
 	//
 	// Json / Gson releated
@@ -1473,7 +1496,7 @@ public abstract class Utils {
 		return w.toString();
 	}
 
-	public static InputStream toBase64AsInpuStream(InputStream inIs, boolean inCloseStream) throws IOException {
+	public static InputStream toBase64AsInputStream(InputStream inIs, boolean inCloseStream) throws IOException {
 		
 		final List<Integer> bytes = new ArrayList<>();
 		 
@@ -1498,6 +1521,33 @@ public abstract class Utils {
 				return bytes.size() < 1 ? -1 : bytes.remove(0);
 			}
 		};
+	}
+	
+	public static void toBase64(InputStream inIs, OutputStream inOs) throws IOException {
+		streamBase64( inIs, inOs );
+	}
+	
+	public static void streamBase64(InputStream inIs, OutputStream inOs) throws IOException {
+		streamBase64(inIs, inOs, false, false);
+	}
+	
+	public static void streamBase64(InputStream inIs, OutputStream inOs, boolean inCloseInputStream, boolean inCloseOutputStream) throws IOException {
+		
+		if ( inIs == null || inOs == null ) { return; }
+		
+		try {
+			
+			Utils.copy(inIs, inOs = Base64.getEncoder().wrap( inOs ) );
+			inOs.flush();
+			
+		} finally {
+			if ( inCloseInputStream ) {
+				close(inIs);
+			}
+			if ( inCloseOutputStream ) {
+				close(inOs);
+			}
+		}
 	}
 	
 	public static String toBase64(InputStream resourceAsStream) throws IOException {
@@ -2057,4 +2107,6 @@ public abstract class Utils {
 	public static String markdownToHtml(String inMarkdown) {
 		return ShowdownTransformer.toHtml(inMarkdown);
 	}
+
+
 }

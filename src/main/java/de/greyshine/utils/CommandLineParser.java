@@ -2,6 +2,7 @@ package de.greyshine.utils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -426,6 +427,13 @@ public class CommandLineParser {
 			
 			return theArgs;
 		}
+		
+		@Override
+		public String toString() {
+			final StringBuilder sb = new StringBuilder();
+			Arrays.stream( args ).forEach( (anArg)->{ sb.append( anArg ).append( ' ' ); } );
+			return "Args ["+ sb.toString().trim() +"]";
+		}
 
 		/**
 		 * 
@@ -576,18 +584,50 @@ public class CommandLineParser {
 		}
 
 		public String getOptionParameter(String inOption) {
+			return getOptionParameter( inOption, null );
+		}
+		
+		public String getOptionParameter(String inOption, String inDefault) {
 			
 			final Option theOption = lookupOption( inOption );
-			if ( !theOption.isOptionParameterized()) { return null; }
+			if ( !theOption.isOptionParameterized()) { return inDefault; }
 			
 			final int theIndex = getOptionIndex( theOption );
-			return theIndex == -1 ? null : getArg( theIndex+1 );
+			
+			if ( theIndex == -1 ) { return inDefault; }
+			
+			final String theResult = getArg( theIndex+1 );
+			
+			return theResult == null ? inDefault : theResult;
 		}
 		
 		public Integer getOptionParameterAsInt(String inOption, Integer inDefault) {
 			return Utils.parseInteger(getOptionParameter(inOption), inDefault);
 		}
 		
+		public File getOptionParameterAsFile(String inOption) {
+			return getOptionParameterAsFile(inOption, null);
+		}
+		
+		public File getOptionParameterAsFile(String inOption, File inDefault) {
+			return Utils.toFile( getOptionParameter( inOption ), true, true );
+		}
+		
+		/**
+		 * Does it contain the flag <tt>v</tt>
+		 * @return
+		 */
+		public boolean isVerbose() {
+			return isOption( "v" );
+		}
+		
+		/**
+		 * Does it contain the flag <tt>q</tt>
+		 * @return
+		 */
+		public boolean isQuiet() {
+			return isOption( "q" );
+		}
 	}
 	
 	private static String removeHyphens(String inOption) {
@@ -604,6 +644,13 @@ public class CommandLineParser {
 		final String unwrapped = Utils.unwrap( inArg, '\"' ); 
 		
 		return !inArg.equals( unwrapped ) ? unwrapped : Utils.unwrap(inArg, '\'');
+	}
+
+	public CommandLineParser optionVerbose() {
+		return option( "v", "verbose" ).optional().description( "be more chatty" ).done();
+	}
+	public CommandLineParser optionQuiet() {
+		return option( "q", "quiet" ).optional().description( "be as quiet as possible" ).done();
 	}
 	
 }
