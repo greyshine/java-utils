@@ -2099,6 +2099,7 @@ public abstract class Utils {
 	 * @param inArgs
 	 * @return
 	 */
+	@SafeVarargs
 	public static <T> List<T> toList(T... inArgs) {
 		return inArgs == null ? new ArrayList<>(0) : new ArrayList<>( Arrays.asList( inArgs ) );
 	}
