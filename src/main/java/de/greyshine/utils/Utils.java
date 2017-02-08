@@ -1139,7 +1139,6 @@ public abstract class Utils {
 		return c;
 	}
 	
-
 	// -------------------
 	// IOStream related
 	// -------------------

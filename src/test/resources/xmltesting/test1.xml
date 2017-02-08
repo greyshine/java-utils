@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<main xmlns:other="funkel" >
+	<sub1>
+		<sub2 att1="att1val1"/>
+	</sub1>
+	<other:sub2>
+		Some Text
+	</other:sub2>
+	<sub2 other:attkey="somevalue">
+		Some <i>more</i> Text<br/>
+	</sub2>
+	<sub3 other:attkey="somevalue">
+		<![CDATA[Line one
+Line two
+Line Three]]>
+	</sub3>
+</main>
