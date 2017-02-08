@@ -1,4 +1,4 @@
-package de.greyshine.spielwiese;
+package de.greyshine.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

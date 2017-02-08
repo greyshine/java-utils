@@ -6,8 +6,6 @@ import javax.xml.stream.events.XMLEvent;
 import org.junit.Assert;
 import org.junit.Test;
 
-import de.greyshine.spielwiese.IXmlHandler;
-
 public class IXmlHandlerTests {
 	
 	@Test
