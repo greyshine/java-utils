@@ -2040,6 +2040,18 @@ public abstract class Utils {
  	public static <T,U> U executeQuietly(Function<T,U> inFunction ) {
  		return executeQuietly(null, null, inFunction);
  	}
+
+ 	public static <T> void executeQuietly(T inValue, Consumer<T> inConsumer ) {
+ 		
+ 		try {
+ 			
+ 			inConsumer.accept(inValue);
+			
+		} catch( Exception e ) {
+			// swallow
+		}
+ 		 
+ 	}
 	
 	public interface IExecuter<T> {
 		T run();
