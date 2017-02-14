@@ -7,7 +7,9 @@ public class Wrapper<T> {
 	
 	public volatile T value;
 	
-	public Wrapper() {}
+	public Wrapper() {
+		this(null);
+	}
 	public Wrapper(T inValue) {
 		value=inValue;
 	}

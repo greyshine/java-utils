@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -388,10 +389,10 @@ public abstract class Utils {
 	 * @return
 	 */
 
-	public static <T> T requireNonNull(T inValue) {
-		return requireNonNull(inValue, null);
+	public static <T> T requireNotNull(T inValue) {
+		return requireNotNull(inValue, null);
 	}
-	public static <T> T requireNonNull(T inValue, String inMessage) {
+	public static <T> T requireNotNull(T inValue, String inMessage) {
 		
 		inMessage = defaultIfBlank( inMessage, "Value must have not have been null." );
 		
@@ -673,6 +674,63 @@ public abstract class Utils {
 		return theIdx < 0 ? null : inFile.getName().substring(theIdx + 1);
 	}
 	
+
+	public static File getCanonicalFile(String inPath) {
+		return getCanonicalFile( inPath, false);
+	}
+	
+	public static File getCanonicalFile(String inPath, boolean inThrowRuntimeException) {
+		return isBlank( inPath ) ? null : getCanonicalFile( new File( inPath ), inThrowRuntimeException );
+	}
+	
+	/**
+	 * 
+	 * @param inFile
+	 * @return <code>true</code> if the file does not exist, otherwise false
+	 */
+	public static boolean delete(File inFile) {
+		
+		if ( inFile == null ) { return true; }
+		else if ( isFile( inFile ) ) {
+			inFile.delete();
+			return !inFile.exists();
+		
+		}
+		final List<File> theDirs = new ArrayList<>();
+		theDirs.add( inFile );
+		
+		while( !theDirs.isEmpty() ) {
+			
+			File theFile = theDirs.remove( theDirs.size()-1 );
+			
+			final List<File> theFiles = Utils.list( theFile );
+			
+			if ( theFiles.isEmpty() ) {
+				
+				theFile.delete();
+			
+			} else {
+				
+				theDirs.add( inFile );
+				theFiles.stream().forEach( (aFile)->{
+					
+					if ( Utils.isFile( aFile ) ) { 
+						
+						aFile.delete();
+						
+					} else { theDirs.add( aFile ); }
+				} );
+				
+			}
+			
+			
+			
+			
+		}
+		
+		return !inFile.exists();
+	}
+	
 	/**
 	 * Same as <code>getCanonicalFile(File inFile, boolean inThrowRuntimeException)</code> but parameter <code>inThrowRuntimeException</code> is set to <code>false</code> 
 	 * @param inFile
@@ -725,9 +783,18 @@ public abstract class Utils {
 		}
 	}
 	
+	/**
+	 * 
+	 * The result needs to have a {@link Boolean} result: when <code>false</code> it will quit traversing, otherwise not which inlcudes <code>null</code> as a result value
+
+	 * @param inFile
+	 * @param inConsumer
+	 * @param inContinueOnException
+	 */
 	public static void traversFiles( File inFile, Function<File, Boolean> inConsumer, boolean inContinueOnException ) {
 		
-		if ( inFile == null || inConsumer == null ) { return; }
+		if ( inFile == null ) { return; }
+		if ( inConsumer == null ) { return; }
 		
 		final List<File> q = new ArrayList<>();
 		q.add( inFile );
@@ -735,7 +802,7 @@ public abstract class Utils {
 		while( !q.isEmpty() ) {
 			
 			final File f = q.remove(0);
-			boolean doContinue = true;
+			Boolean doContinue = true;
 			
 			try {
 			
@@ -748,7 +815,7 @@ public abstract class Utils {
 				}
 			}
 			
-			if ( !doContinue ) {
+			if ( isFalse( doContinue ) ) {
 				q.clear();
 				break;
 			}
@@ -880,21 +947,47 @@ public abstract class Utils {
 	 * @return
 	 */
 	public static List<File> list(File inFile) {
+		return list( inFile, (f)->{return true;} );
+	}
+	
+	public static List<File> list(File inFile, Predicate<File> inFilter) {
 
 		if ( !Utils.isDir(inFile) ) {
 			return new ArrayList<File>(0);
 		}
+		
+		inFilter = defaultIfNull(inFilter, (x)->{return true;} );
 
-		final List<File> theFiles = new ArrayList<File>(0);
+		final List<File> theFiles = new ArrayList<>();
 
 		for (final File aFile : defaultIfNull(inFile.listFiles(), EMPTY_FILES)) {
 
+			if ( !inFilter.test( aFile ) ) { continue; }
+			
 			theFiles.add(aFile);
 		}
 
 		Collections.sort(theFiles, FILE_COMPARATOR);
 
 		return theFiles;
+	}
+	
+	/**
+	 * Lists only files; no traversal.
+	 * @param inFile
+	 * @return
+	 */
+	public static List<File> listFiles(File inFile) {
+		return list( inFile, (f)->{ return Utils.isFile(inFile); } ); 
+	}
+	
+	/**
+	 * Lists only directories; no traversal.
+	 * @param inFile
+	 * @return
+	 */
+	public static List<File> listDirs(File inFile) {
+		return list( inFile, (f)->{ return Utils.isDir(inFile); } ); 
 	}
 
 	/**
@@ -1837,7 +1930,141 @@ public abstract class Utils {
 		if ( inArray == null || inConsumer == null ) { return; }
 		Stream.of( inArray ).filter( inPredicate == null ? inPredicate : i -> {return true;} ).forEach( inConsumer );
 	}
+	
+	
+	// ---------------
+	// Thread releated
+	// ---------------
+	public static void threadNotifyAll( Object inSync ) {
+		if ( inSync != null ) {
+			synchronized ( inSync ) {
+				inSync.notifyAll();
+			}	
+		}
+	}
+	
+	public static long threadWait( Object inSynchronizedObject, long inMaxCheckInterval, Supplier<Boolean> inWaitCondition ) {
+		
+		if ( inSynchronizedObject == null ) { return 0; }
+		
+		final long starttime = System.currentTimeMillis();
+		
+		inMaxCheckInterval = inMaxCheckInterval <= 0 ? 950 : inMaxCheckInterval;
+		
+		while( Utils.isTrue( inWaitCondition.get() ) ) {
+			
+			synchronized ( inSynchronizedObject ) {
+				
+				try {
+					
+					inSynchronizedObject.wait( inMaxCheckInterval );
+				
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		return System.currentTimeMillis()-starttime;
+	}
+	
+	public static void threadSleep(long inMillis) {
+		
+		final long theWaitDone = System.currentTimeMillis() + inMillis;
+		long theRestTime = theWaitDone - System.currentTimeMillis();
+		
+		final Thread theCurrentThread = Thread.currentThread(); 
+		
+		while ( theRestTime > 0 ) {
+			
+			synchronized ( theCurrentThread ) {
+				try {
+					Thread.yield();
+						theCurrentThread.wait( theRestTime );	
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 
+	public static <T,U> U executeQuietly( T inValue, U inDefaultResult, Function<T,U> inFunction ) {
+		
+ 		if ( inValue == null || inFunction == null ) { return inDefaultResult; }
+ 		
+ 		try {
+
+ 			return inFunction.apply( inValue );
+			
+		} catch (Exception e) {
+			// swallow
+			return inDefaultResult;
+		}
+	}
+
+ 	public static <T,U> U executeQuietly( T inValue, Function<T,U> inFunction ) {
+ 		return executeQuietly(inValue, null, inFunction);
+ 	}
+ 	
+ 	public static <T,U> U executeQuietly(Function<T,U> inFunction ) {
+ 		return executeQuietly(null, null, inFunction);
+ 	}
+
+ 	public static <T> void executeQuietly(T inValue, Consumer<T> inConsumer ) {
+ 		
+ 		try {
+ 			
+ 			inConsumer.accept(inValue);
+			
+		} catch( Exception e ) {
+			// swallow
+		}
+ 		 
+ 	}
+	
+	public interface IExecuter<T> {
+		T run();
+		/**
+		 * Any thrown {@link Exception} will be handled as the return value of the method and will be rethrown as a {@link RuntimeException}.<br/>
+		 * Defaults to returning <tt>null</tt>
+		 * 
+		 * @param inThrowable the {@link Exception} previously thrown by the run method
+		 * @return if not <tt>null</tt> the result value will be rethrown as a {@link RuntimeException}
+		 */
+		default RuntimeException handleException(Throwable inThrowable) { return null; };
+	}
+	
+	public static <T> T executeQuietly(IExecuter<T> inExecution) {
+		return executeQuietly((IExecuter<T>)inExecution, (T)null);
+	}
+	
+	public static <T> T executeQuietly(IExecuter<T> inExecution, T inDefaultResult) {
+		
+		if ( inExecution == null ) {
+			return inDefaultResult;
+		}
+		
+		try {
+			
+			return inExecution.run();
+			
+		} catch (Throwable t) {
+
+			Throwable t2 = null;
+			
+			try {
+				t2 = inExecution.handleException(t);
+			} catch (Exception e) {
+				t2 = e;
+			}
+			
+			if ( t2 != null ) {
+				throw toRuntimeException(t2);
+			}
+		}
+		
+		return inDefaultResult;
+	}
 	
 	// --------------------
 	// stuff
@@ -2019,84 +2246,6 @@ public abstract class Utils {
 		return theResult.value;
 	}
 
- 	public static <T,U> U executeQuietly( T inValue, U inDefaultResult, Function<T,U> inFunction ) {
-		
- 		if ( inValue == null || inFunction == null ) { return inDefaultResult; }
- 		
- 		try {
-
- 			return inFunction.apply( inValue );
-			
-		} catch (Exception e) {
-			// swallow
-			return inDefaultResult;
-		}
-	}
-
- 	public static <T,U> U executeQuietly( T inValue, Function<T,U> inFunction ) {
- 		return executeQuietly(inValue, null, inFunction);
- 	}
- 	
- 	public static <T,U> U executeQuietly(Function<T,U> inFunction ) {
- 		return executeQuietly(null, null, inFunction);
- 	}
-
- 	public static <T> void executeQuietly(T inValue, Consumer<T> inConsumer ) {
- 		
- 		try {
- 			
- 			inConsumer.accept(inValue);
-			
-		} catch( Exception e ) {
-			// swallow
-		}
- 		 
- 	}
-	
-	public interface IExecuter<T> {
-		T run();
-		/**
-		 * Any thrown {@link Exception} will be handled as the return value of the method and will be rethrown as a {@link RuntimeException}.<br/>
-		 * Defaults to returnin <tt>null</tt>
-		 * 
-		 * @param inThrowable the {@link Exception} previously thrown by the run method
-		 * @return if not <tt>null</tt> the result value will be rethrown as a {@link RuntimeException}
-		 */
-		default RuntimeException handleException(Throwable inThrowable) { return null; };
-	}
-	
-	public static <T> T executeQuietly(IExecuter<T> inExecution) {
-		return executeQuietly((IExecuter<T>)inExecution, (T)null);
-	}
-	
-	public static <T> T executeQuietly(IExecuter<T> inExecution, T inDefaultResult) {
-		
-		if ( inExecution == null ) {
-			return inDefaultResult;
-		}
-		
-		try {
-			
-			return inExecution.run();
-			
-		} catch (Throwable t) {
-
-			Throwable t2 = null;
-			
-			try {
-				t2 = inExecution.handleException(t);
-			} catch (Exception e) {
-				t2 = e;
-			}
-			
-			if ( t2 != null ) {
-				throw toRuntimeException(t2);
-			}
-		}
-		
-		return inDefaultResult;
-	}
-
 	public static Charset defaultCharset(String inCharset) {
 		try {
 			return Charset.forName( inCharset );
@@ -2120,5 +2269,24 @@ public abstract class Utils {
 		return ShowdownTransformer.toHtml(inMarkdown);
 	}
 
+	/**
+	 * Simple logger interface for development in order to have an easy way to turn on outputs.
+	 */
+	public interface ILogger {
+		ILogger SYSTEM_OUT_ERR = new ILogger() {
+			@Override
+			public void log(Object inMessage, Throwable t) {
+				System.out.println( inMessage );
+				if ( t != null ) { t.printStackTrace( System.out ); }
+			}
+			@Override
+			public void err(Object inMessage, Throwable t) {
+				System.err.println( inMessage );
+				if ( t != null ) { t.printStackTrace( System.err ); }
+			}
+		};
+		void log(Object inMessage, Throwable t);
+		void err(Object inMessage, Throwable t);
+	}
 
 }

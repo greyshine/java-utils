@@ -12,7 +12,7 @@ public class Main {
 
 			@Override
 			public void event(Event inEvent, File inFile) {
-				System.out.println( inEvent + " : "+ inFile );
+				System.out.println( "OBSERVER: "+  inEvent + " : "+ inFile );
 			}};
 		
 		final FileChangeObserver fco = new FileChangeObserver( new File("target/watched") );
