@@ -2,6 +2,7 @@ package de.greyshine.utils.deprecated;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -12,6 +13,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.omg.CosNaming.IstringHelper;
+
+import de.greyshine.utils.deprecated.Utils;
 
 public class CsvReader {
 
@@ -77,6 +82,12 @@ public class CsvReader {
 		this.isTrimCells = isTrimCells;
 	}
 
+	public void read(File inCsvFile, String inCharset, ICellHandler inCellHandler) throws Exception {
+		try ( FileInputStream fis = new FileInputStream( inCsvFile ) ) {
+			read( fis, inCharset, inCellHandler );
+		}
+	}
+	
 	public void read(InputStream in, String inCharset, final ICellHandler inCellHandler) throws Exception {
 
 		if (inCellHandler == null) {
@@ -223,7 +234,7 @@ public class CsvReader {
 
 		read(inFile == null ? null : inFile.toURI().toURL(), inCharset, inSeparator, isCellWrapped, inFirstLineHeadings, inRowHandler);
 	}
-
+	
 	public static void read(URL inUrl, String inCharset, String inSeparator, boolean isCellWrapped, boolean inFirstLineHeadings, ICellHandler inCellHandler) throws Exception {
 
 		final InputStream theIs = inUrl.openStream();
@@ -250,22 +261,22 @@ public class CsvReader {
 
 	public static interface IRowHandler {
 
-		boolean begin(List<String> inHeadings);
+		default boolean begin(List<String> inHeadings) { return true; };
 
 		boolean handleRow(int inRowIndex, Map<Integer, String> inValuesByIndex, Map<String, String> inValuesByName, Integer inHeadingDifference, String inLine) throws Exception;
 
-		void handleDone(int inRowCount) throws Exception;
+		default void handleDone(int inRowCount) throws Exception {};
 	}
 
 	public static interface ICellHandler {
 
-		boolean begin(List<String> inHeadings);
+		default boolean begin(List<String> inHeadings) { return true; };
 
-		boolean handleNewline(int inRowIndex, String inRow) throws Exception;
+		default boolean handleNewline(int inRowIndex, String inRow) throws Exception { return true; };
 
 		boolean handleCell(int inRowIndex, String inColumnName, int inColumnIndex, String inValue) throws Exception;
 
-		void handleDone(int inRowCount) throws Exception;
+		default void handleDone(int inRowCount) throws Exception {};
 	}
 
 	public static void readFile(String inFile, String inCharset, String inSeparator, boolean isCellWrapped, boolean inFirstLineHeadings, IRowHandler inRowHandler) throws Exception {

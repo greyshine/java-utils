@@ -12,6 +12,10 @@ import javax.script.ScriptEngineManager;
  *
  */
 public abstract class ShowdownTransformer {
+	
+	public static final String OPTION_simpleLineBreaks = "simpleLineBreaks";
+	public static final String OPTION_tables = "tables";
+	public static final String OPTION_strikethrough = "strikethrough";
 
 	/**
 	 * https://raw.githubusercontent.com/showdownjs/showdown/master/dist/showdown.js
@@ -54,6 +58,9 @@ public abstract class ShowdownTransformer {
 			theNashorn.eval("var console = { log:function(msg){print(msg);} }");
 			theNashorn.eval(SHOWDOWNJS);
 			theNashorn.eval("var theShowdownJsConverter = new showdown.Converter();");
+			theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_tables +"',true);");
+			theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_strikethrough +"',true);");
+			theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_simpleLineBreaks +"',true);");
 			
 			return theNashorn;	
 			
@@ -67,7 +74,7 @@ public abstract class ShowdownTransformer {
 	public static String toHtml(String inMarkdown) {
 		
 		if ( SHOWDOWNJS == null ) {
-			throw new IllegalStateException("unable to load javascirpt resource: "+ RESOURCE_SHOWDOWN_JS);
+			throw new IllegalStateException("unable to load javascript resource: "+ RESOURCE_SHOWDOWN_JS);
 		}
 		
 		final ScriptEngine theSe = TL_JS_SCRIPTENGINES_SHOWDOWNJS.get();
@@ -76,8 +83,10 @@ public abstract class ShowdownTransformer {
 			final Object c = theSe.eval("theShowdownJsConverter");
 			final Object r = ((Invocable) theSe).invokeMethod(c, "makeHtml", inMarkdown == null ? "" : inMarkdown);
 			return (String)r;
+		} catch (RuntimeException e) {
+			throw e;
 		} catch (Exception e) {
-			throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
+			throw new RuntimeException(e);
 		}
 	}
 }

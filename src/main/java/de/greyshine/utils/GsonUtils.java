@@ -8,6 +8,7 @@ import java.util.Collection;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
@@ -78,5 +79,15 @@ public abstract class GsonUtils {
 		
 		return ja;
 	}
-	
+
+	public static String getAsJsonStringSafe(JsonObject inJson, String inMember, String inDefault) {
+		
+		if ( inJson == null ) { return inDefault; }
+		
+		final JsonElement jp = inJson.get( inMember );
+		
+		final String s = jp == null || !jp.isJsonPrimitive() ? null : jp.getAsString(); 
+		
+		return s == null ? inDefault : s;
+	}
 }

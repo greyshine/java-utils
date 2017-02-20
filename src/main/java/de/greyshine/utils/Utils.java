@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -27,6 +28,9 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -38,10 +42,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -52,8 +58,10 @@ import java.util.stream.Stream;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonWriter;
 
 public abstract class Utils {
 	
@@ -139,6 +147,10 @@ public abstract class Utils {
 			.put("\u00DC", "Ue")//
 			.put("\u00DF", "ss")//
 			.get(true);
+	
+	private static volatile AtomicLong nowAnchor = new AtomicLong(-1L);
+	private static volatile long now = System.currentTimeMillis();
+	private static final Map<String,DateTimeFormatter> DATETIMEFORMATTERS = new HashMap<>();
 	
 	/**
 	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-empty
@@ -782,11 +794,47 @@ public abstract class Utils {
 			return null;
 		}
 	}
+
+	
+	public static void traversFiles( File inFile, boolean isConsumeDirs, boolean isConsumeFiles, Consumer<File> inConsumer) {
+		
+		traversFiles(inFile, (aFile)->{
+			
+			if ( !isConsumeDirs && isDir( aFile ) ) { return true; }
+			if ( !isConsumeFiles && isFile( aFile ) ) { return true; }
+			
+			try {
+				
+				inConsumer.accept(aFile);
+				
+			} catch (Exception e) {
+				// swallow
+			}
+			
+			return true;
+			
+		}, true);
+	}
+	
+	public static void traversFiles( File inFile, Consumer<File> inConsumer) {
+		
+		traversFiles(inFile, (aFile)->{
+			
+			try {
+				
+				inConsumer.accept(aFile);
+				
+			} catch (Exception e) {
+				// swallow
+			}
+			
+			return true;
+			
+		}, true);
+	}
 	
 	/**
-	 * 
 	 * The result needs to have a {@link Boolean} result: when <code>false</code> it will quit traversing, otherwise not which inlcudes <code>null</code> as a result value
-
 	 * @param inFile
 	 * @param inConsumer
 	 * @param inContinueOnException
@@ -859,7 +907,13 @@ public abstract class Utils {
 	 * @param inExceptionMessage
 	 */
 	public static void requireExistingDir(File inDir, String inExceptionMessage) {
-		if (!isDir(inDir) ) {
+		if ( isNoDir(inDir) ) {
+			throw new IllegalStateException(inExceptionMessage);
+		}
+	}
+	
+	public static void requireExistingFile(File inFile, String inExceptionMessage) {
+		if ( isNoFile(inFile ) ) {
 			throw new IllegalStateException(inExceptionMessage);
 		}
 	}
@@ -892,6 +946,11 @@ public abstract class Utils {
 		return theLines;
 	} 
 	
+	public static String readFileToString(String inFile, Charset inCharset) throws IOException {
+	
+		return readToString(inFile, inCharset);
+	}
+	
 	public static String readToString(String inFile, Charset inCharset) throws IOException {
 		
 		if ( !isFile(inFile) ) { return null; }
@@ -899,6 +958,10 @@ public abstract class Utils {
 		try(FileInputStream fis = new FileInputStream( inFile )) {
 			return readToString( fis, inCharset);
 		}
+	}
+	
+	public static String readFileToString(File inFile, Charset inCharset) throws IOException {
+		return readToString(inFile, inCharset);
 	}
 	public static String readToString(File inFile, Charset inCharset) throws IOException {
 		
@@ -1079,6 +1142,10 @@ public abstract class Utils {
 	}
 
 	public static long copy(InputStream inInputStream, OutputStream inOutputStream) throws IOException {
+		
+		if ( inInputStream == null || inOutputStream == null ) { return -1; }
+		
+		
 		//
 		final byte[] buffer = new byte[4 * 1024];
 
@@ -1091,6 +1158,14 @@ public abstract class Utils {
 
 		inOutputStream.flush();
 		return count;
+	}
+	
+	public static void copy(InputStream inInputStream, File inTargetFile, boolean inCloseInputStream) throws IOException {
+		copy( inInputStream, new FileOutputStream( inTargetFile ), inCloseInputStream, true );
+	}
+	
+	public static void copy(InputStream inInputStream, File inTargetFile) throws IOException {
+		copy( inInputStream, inTargetFile, true ); 
 	}
 	
 	// --------------------------
@@ -1239,8 +1314,9 @@ public abstract class Utils {
 	
 	public static final OutputStream DEV0 = new OutputStream() {@Override public void write(int arg0) throws IOException {}; public String toString() { return "DEV0-OutputStream"; } };
 	
-	public static void close(Closeable inCloseable) {
-		close(inCloseable, false);
+	public static void close(Closeable... inCloseable) {
+		if ( inCloseable == null ) { return; }
+		Arrays.stream( inCloseable ).forEach( (c)->{ close( c, false ); } );
 	}
 	
 	public static void close(Closeable inCloseable, boolean inFlush) {
@@ -1299,6 +1375,25 @@ public abstract class Utils {
 		return je != null && je.isJsonObject() ? je.getAsJsonObject() : null;
 	}
 	
+	public static JsonObject readJsonObject(InputStream inIs, boolean inCloseStream) throws IOException {
+		
+		final JsonElement je = readJson(  inIs, inCloseStream ).getAsJsonObject();
+		
+		return je != null && je.isJsonObject() ? je.getAsJsonObject() : null;
+	}
+	
+	public static JsonElement readJson(InputStream inIs, boolean inCloseStream) throws IOException {
+		
+		try {
+			
+			return DEFAULT_JSON_PARSER.parse( new InputStreamReader( inIs, CHARSET_UTF8 ) );
+			
+		} finally {
+			
+			close( inIs );
+		}
+	}
+	
 	public static JsonElement readJson(File inFile) throws IOException {
 		
 		FileReader fr = null;
@@ -1309,6 +1404,25 @@ public abstract class Utils {
 			
 		} finally {
 			close( fr );
+		}
+	}
+	
+	public static void writeJson(JsonObject json, File inJsonFile) throws IOException {
+		writeJson( json, new FileOutputStream( inJsonFile ), true );
+	}
+	public static void writeJson(JsonElement json, OutputStream inOs, boolean inCloseStream) throws IOException {
+		
+		json = json == null ? JsonNull.INSTANCE : json;
+		
+		 final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		
+		 for(byte b : gson.toJson( json ).getBytes( CHARSET_UTF8 )) {
+			 
+			 inOs.write( b );
+		 }
+		inOs.flush();
+		if ( inCloseStream ) {
+			inOs.close();
 		}
 	}
 
@@ -1932,6 +2046,68 @@ public abstract class Utils {
 	}
 	
 	
+	// ------------
+	// Date related
+	// ------------
+	public void setNow( Long inTimeInMIllis ) {
+		
+		synchronized ( nowAnchor ) {
+		
+			if ( inTimeInMIllis == null ) {
+				
+				nowAnchor.set( -1 );
+				
+				nowAnchor = null;
+				now = System.currentTimeMillis();
+			
+			} else {
+				
+				nowAnchor.set( System.currentTimeMillis() );
+				now = inTimeInMIllis;
+			}
+		}
+	}
+	
+	public long getNow() {
+		
+		if ( nowAnchor.get() < 0 ) {
+			
+			return System.currentTimeMillis();
+		}
+		
+		synchronized ( nowAnchor ) {
+			
+			if ( nowAnchor.get() < 0 ) {
+				
+				return System.currentTimeMillis();
+			}
+
+			return now + (System.currentTimeMillis() - nowAnchor.get());
+		}
+	}
+	
+	
+	public static String formatDate(String inPattern, LocalDateTime inTime) {
+		return formatDate( inPattern, Locale.getDefault(), inTime );
+	}
+	
+	public static String formatDate(String inPattern, Locale inLocale, LocalDateTime inTime) {
+		
+		if ( inPattern == null || inTime == null ) {
+		
+			return null;
+		}
+		
+		DateTimeFormatter theDtf = DATETIMEFORMATTERS.get( inPattern );
+		
+		if ( theDtf == null ) {
+		
+			DATETIMEFORMATTERS.put( inPattern, theDtf = new DateTimeFormatterBuilder().appendPattern( inPattern ).toFormatter( inLocale ) );
+		}
+		
+		return theDtf.format( inTime );
+	}
+	
 	// ---------------
 	// Thread releated
 	// ---------------
@@ -2270,7 +2446,8 @@ public abstract class Utils {
 	}
 
 	/**
-	 * Simple logger interface for development in order to have an easy way to turn on outputs.
+	 * Simple logger interface for development in order to have an easy way to turn on/off outputs.
+	 * Reference the {@link ILogger}.SYSTEM_OUT_ERR for printing to stdout/stderr.
 	 */
 	public interface ILogger {
 		ILogger SYSTEM_OUT_ERR = new ILogger() {
@@ -2286,7 +2463,18 @@ public abstract class Utils {
 			}
 		};
 		void log(Object inMessage, Throwable t);
+		default void log(Object inMessage) { log( inMessage, null ); };
 		void err(Object inMessage, Throwable t);
+		default void err(Object inMessage) { err( inMessage, null ); };
 	}
+	
+	// ------------------
+	// toString() methods
+	// ------------------
+	public static String toString(Throwable t) {
+		return t == null ? null : t.getClass().getName() +": "+ t.getMessage();
+	}
+
+	
 
 }
