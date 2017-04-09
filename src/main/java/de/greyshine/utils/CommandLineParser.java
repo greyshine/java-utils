@@ -1,6 +1,7 @@
 package de.greyshine.utils;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +13,29 @@ import java.util.regex.Pattern;
  */
 public class CommandLineParser {
 
+	enum Stream {
+		/**
+		 * DEV1
+		 */
+		OUT,
+		/**
+		 * DEV2
+		 */
+		ERR;
+		
+		public PrintStream getStream() {
+			
+			switch ( this ) {
+			case OUT:
+				return System.out;
+			case ERR:
+				return System.err;
+			default:
+				throw new IllegalStateException("must not occur");
+			}
+		};
+	}
+	
 	private List<Option> options = new ArrayList<>();
 	private List<SimpleArg> simpleArgs = new ArrayList<>(0);
 
@@ -353,8 +377,17 @@ public class CommandLineParser {
 	}
 
 	public String getHelp() {
+		return getHelp(null);
+	}
+		public String getHelp(String inCustomMessage) {
+
+		inCustomMessage = Utils.trimToNull( inCustomMessage );
 
 		final StringBuilder sb = new StringBuilder();
+		
+		if ( inCustomMessage != null ) {
+			sb.append( inCustomMessage ).append( "\n\n" );
+		}
 
 		if (headerText != null) {
 			sb.append(headerText);
@@ -373,8 +406,15 @@ public class CommandLineParser {
 		return sb.toString().trim();
 	}
 
+	public void printHelp(String inCustomMessage, Stream inStream) {
+		
+		inStream = inStream != null ? inStream : Stream.OUT;
+		inStream.getStream().println( getHelp(inCustomMessage) );
+	}
+	
 	public void printHelp() {
-		System.out.println(getHelp());
+		
+		printHelp( null, null );
 	}
 
 	public Args parse(String[] inArgs) {
@@ -477,6 +517,11 @@ public class CommandLineParser {
 			getSimpleArgs().stream().filter(Utils::isNotBlank).map(File::new).forEach(vs::add);
 
 			return vs;
+		}
+		
+		public boolean isSimpleArgNotBlank(int inIndex) {
+			final String theValue = getSimpleArg( inIndex );
+			return theValue != null && !theValue.trim().isEmpty();
 		}
 		
 		public String getSimpleArg(int inIndex) {
@@ -646,11 +691,24 @@ public class CommandLineParser {
 		return !inArg.equals( unwrapped ) ? unwrapped : Utils.unwrap(inArg, '\'');
 	}
 
+	/**
+	 * Adds the option <code>v</code> and <code>verbose</code> for being more chatty.
+	 * @return
+	 */
 	public CommandLineParser optionVerbose() {
 		return option( "v", "verbose" ).optional().description( "be more chatty" ).done();
 	}
+	
+	/**
+	 * Adds the option <code>q</code> and <code>quiet</code> for being quiet as possible with the output.
+	 * @return
+	 */
 	public CommandLineParser optionQuiet() {
 		return option( "q", "quiet" ).optional().description( "be as quiet as possible" ).done();
+	}
+
+	public CommandLineParser optionHelp() {
+		return option("h", "help").optional().description("show the help information").done();
 	}
 	
 }

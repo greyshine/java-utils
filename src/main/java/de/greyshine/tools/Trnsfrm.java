@@ -38,12 +38,14 @@ public class Trnsfrm {
 		CLP.option("c", "readclipboard").optional().description("read from clipboard instead stdin");
 		CLP.option(OPTION_COPY2CLIPBOARD, "copy2clipboard").optional()
 				.description("copy output to clipboard\n(might not be supported by OS)");
+		CLP.option( "pf" , "prefix").parameter( "text" ).description( "prepend text before output" ).optional();
 		// TODO...
 		//CLP.option("wh", "wraphtml").optional().description("wrap html img-tag around output.\n(Will only apply when <algorithm is " + Algorithm.BASE64 + ">)");
 		//CLP.option("whit", "imagetype").parameter("image-type").optional().description("wrap html img-tag around output.\n(Will only apply when <algorithm is " + Algorithm.BASE64 + ">)");
 		CLP.option("o", "out").parameter("file").optional().description("write output to given file");
+		
 		CLP.optionVerbose().optionQuiet();
-		CLP.option("h", "help").optional().description("show this message");
+		CLP.optionHelp();
 		CLP.generateUsageText("trnsfrm");
 	}
 
@@ -52,7 +54,6 @@ public class Trnsfrm {
 	private final Algorithm algorithm;
 	private final InputStream inStream;
 	private final OutputStream outStream;
-	
 	
 	private Trnsfrm(Args inArgs) {
 		
@@ -69,8 +70,8 @@ public class Trnsfrm {
 			
 			inStream = null;
 			outStream = null;
-
-			serr("bad algorithm: " + theAlgorithmName + "; " + Arrays.asList(Algorithm.values()), false);
+			
+			serr( CLP.getHelp( "bad algorithm: " + theAlgorithmName + "; use one of: " + Arrays.asList(Algorithm.values()) ), false);
 			return;
 		}
 		
@@ -89,8 +90,20 @@ public class Trnsfrm {
 			sout( "waiting for input on stdin...", true);
 		}
 		
+		if ( args.isOption( "pf" ) ) {
+			
+			final String thePrefixText = args.getOptionParameter( "pf", "" );
+			
+			sout( "prefixing text: "+ thePrefixText, true );
+			
+			outStream.write( thePrefixText.getBytes() );
+		}
+		
 		algorithm.handle( inStream , outStream);
 		
+		if ( outStream instanceof CbOutputStream ) {
+			outStream.close();
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -205,10 +218,10 @@ public class Trnsfrm {
 		}
 
 		if (isCopyToClipboard()) {
-
+			
 			sout("copy result to clipboard", true);
 
-			os = new CbOutputStream(os);
+			os = new CbOutputStream();
 		}
 
 		return os;
@@ -361,15 +374,17 @@ public class Trnsfrm {
     	final StringBuilder text = new StringBuilder();
     	final OutputStream os;
 		
+		public CbOutputStream() {
+			this(null);
+		}
 		public CbOutputStream(OutputStream os) {
-			this.os = os;
+			this.os = os == null ? Utils.DEV0 : os;
 		}
 
 		@Override
 		public void write(int b) throws IOException {
 			
 			text.append( (char)b );
-			
 			os.write(b);
 		}
 
@@ -386,6 +401,7 @@ public class Trnsfrm {
 			if ( !theText.trim().isEmpty() ) {
                 
 				try {
+					
 					Toolkit.getDefaultToolkit().getSystemClipboard().setContents( new StringSelection( theText ), null);
 					
 					sout("copied "+ theText.length() +" bytes to clipboard", true);

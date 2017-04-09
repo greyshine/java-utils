@@ -691,6 +691,10 @@ public abstract class Utils {
 		return getCanonicalFile( inPath, false);
 	}
 	
+	public static String getCanonicalPath(String inPath) {
+		return isBlank( inPath ) ? inPath : getCanonicalFile( inPath, false).getAbsolutePath();
+	}
+
 	public static File getCanonicalFile(String inPath, boolean inThrowRuntimeException) {
 		return isBlank( inPath ) ? null : getCanonicalFile( new File( inPath ), inThrowRuntimeException );
 	}
@@ -1392,6 +1396,13 @@ public abstract class Utils {
 			
 			close( inIs );
 		}
+	}
+	
+	public static JsonElement readJson(String inJsonString) throws IOException {
+		
+		inJsonString = defaultIfBlank(inJsonString, "null");
+		
+		return readJson( new ByteArrayInputStream( inJsonString.getBytes( CHARSET_UTF8 ) ), true );
 	}
 	
 	public static JsonElement readJson(File inFile) throws IOException {
@@ -2199,7 +2210,7 @@ public abstract class Utils {
  	}
 	
 	public interface IExecuter<T> {
-		T run();
+		T run() throws Exception;
 		/**
 		 * Any thrown {@link Exception} will be handled as the return value of the method and will be rethrown as a {@link RuntimeException}.<br/>
 		 * Defaults to returning <tt>null</tt>
