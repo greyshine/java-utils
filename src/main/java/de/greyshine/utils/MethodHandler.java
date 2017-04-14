@@ -1,4 +1,4 @@
-package de.greyshine.utils.deprecated;
+package de.greyshine.utils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

@@ -21,9 +21,6 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import de.greyshine.utils.deprecated.IClassHandler;
-import de.greyshine.utils.deprecated.IMethodHandler;
-import de.greyshine.utils.deprecated.MethodHandler;
 import de.greyshine.utils.deprecated.Utils;
 
 public abstract class ReflectionUtils {
@@ -305,7 +302,10 @@ public abstract class ReflectionUtils {
 
 		while (inClass != null) {
 
-			inClassHandler.handle(inClass);
+			final boolean isKeepOnTraversing = inClassHandler.handle(inClass);
+			
+			if ( !isKeepOnTraversing ) { return; }
+			
 			inClass = inClass.getSuperclass();
 		}
 	}
@@ -323,8 +323,11 @@ public abstract class ReflectionUtils {
 
 				for (final Method inMethod : inClass.getDeclaredMethods()) {
 
-					inMethodHandler.handle(inMethod);
+					final boolean isKeepOnTraversing = inMethodHandler.handle(inMethod);
+				
+					if ( !isKeepOnTraversing ) { return false; }
 				}
+				
 				return true;
 			}
 		});

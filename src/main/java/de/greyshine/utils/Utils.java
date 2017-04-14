@@ -152,6 +152,8 @@ public abstract class Utils {
 	private static volatile long now = System.currentTimeMillis();
 	private static final Map<String,DateTimeFormatter> DATETIMEFORMATTERS = new HashMap<>();
 	
+	private static ToString FUNCTIONS_TOSTRING = new ToString();
+	
 	/**
 	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-empty
 	 */
@@ -2482,8 +2484,12 @@ public abstract class Utils {
 	// ------------------
 	// toString() methods
 	// ------------------
-	public static String toString(Throwable t) {
-		return t == null ? null : t.getClass().getName() +": "+ t.getMessage();
+	public static String toString(Object inObject) {
+		return FUNCTIONS_TOSTRING.toString( inObject );
+	}
+	
+	public static void registerToString(Class<?> inClass, Function<Object,String> inToStringFunction) {
+		FUNCTIONS_TOSTRING.register( inClass, inToStringFunction);
 	}
 
 	
