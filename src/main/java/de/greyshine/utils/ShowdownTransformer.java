@@ -23,7 +23,7 @@ public abstract class ShowdownTransformer {
 	 * I downloaded the version and put it as resource.
 	 * 
 	 */
-	private static final String RESOURCE_SHOWDOWN_JS = "js/showdownjs/showdown-2017.02.06.js";
+	private static final String RESOURCE_SHOWDOWN_JS = "js/showdownjs/showdown-1.6.3.js";
 	private static final String SHOWDOWNJS;
 	
 	static {

@@ -835,6 +835,16 @@ public abstract class ReflectionUtils {
 		return inMethod != null && Modifier.isAbstract(inMethod.getModifiers());
 	}
 
+	public static boolean isPublic(Field inField) {
+		
+		return inField != null && Modifier.isPublic(inField.getModifiers());
+	}
+
+	public static boolean isPublicStatic(Field inField) {
+
+		return isPublic(inField) && isStatic(inField) ;
+	}
+	
 	public static boolean isPivate(Field inField) {
 
 		return inField != null && Modifier.isPrivate(inField.getModifiers());

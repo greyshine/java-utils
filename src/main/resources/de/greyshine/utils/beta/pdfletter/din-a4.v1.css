@@ -1,0 +1,173 @@
+/* https://printsachen.de/briefpapier-erstellen/ , DIN-Norm 5008 Form B */
+@page {
+    
+    size: 21cm 29.7cm;
+    margin: 2.7cm 1.5cm 1.5cm auto;
+    font-size: 11pt;
+	
+	@bottom-left {
+		content: element(footer-left);
+	}
+	@bottom-center {
+		content: element(footer-center);
+	}
+	@bottom-right {
+		content: element(footer-right);
+	}
+}
+
+@page:first {
+	margin-top: 1cm;
+}
+
+#pagenumber:before {
+    content: counter(page);
+}
+   
+#pagecount:before {
+	content: counter(pages);
+}
+
+#footer-left {
+    position: running(footer-left);
+    margin-left:2.0cm;
+    width: 8.0cm;
+    font-size:0.7em;
+}
+
+#footer-center {
+    position: running(footer-center);
+    width: 8.0cm;
+    font-size:0.7em;
+}
+
+#footer-right {
+    position: running(footer-right);
+    text-align: right;
+    /* if width is not set w/ footer-left and footer-center: margin-right: -1.5cm;*/
+    margin-right: 8cm;
+}
+
+div#letter-faltmarke {
+	position: relative;
+	top: 9.1cm;
+	left:0;
+	width: 1cm;
+	border-top: 1px solid silver;
+}
+
+div#letter-lochmarke {
+	position: relative;
+	top: 13.45cm;
+	width: 1cm;
+	border-top: 1px solid silver;
+}
+
+div#leftVerticalText {
+	position: absolute;
+	top: 13.00cm;
+	width: 1cm;
+	color: blue;
+}
+
+img#toplogo {
+	position: absolute;
+	top: -0.25cm;
+	left: 0.5cm;
+	height: 3cm;
+}
+
+div#letterhead-address {
+	position:absolute;
+	top:3.4cm;
+	left:1.5cm;
+	height:4.5cm;
+	width:8.7cm;
+	/*border: 1px solid black;
+	border-radius: 5px;*/
+	padding-left: 0.5cm;
+}
+
+div#letterhead-senderline {
+	font-size: 8pt;
+	padding-top: 0.25cm;
+}
+
+div#letterhead-separator-horizontal {
+	border-bottom: 1px solid silver;
+	width: 9cm;
+	margin: 0.15cm -0.5cm 0.20cm;
+	margin-left: -0.5cm; 
+}
+
+div#letterhead-additionalblock {
+	position:absolute;
+	top:4.0cm;
+	left: 11cm;
+	width: 8.0cm;
+	/*border: 1px solid black;
+	border-radius: 5px;*/
+}
+
+div#letterhead-additionalblock > div {
+	float:left;
+	font-size: 10pt;
+}
+
+div#letterhead-additionalblock > div.left {
+	text-align: right;
+	width: 40%;
+}
+div#letterhead-additionalblock > div.left > span {
+	color: silver;
+}
+
+div#letterhead-additionalblock td {
+	/*border: 1px solid red;*/
+	font-size: 10pt;
+	vertical-align: top;
+}
+
+div#letterhead-additionalblock td.left {
+	color: silver;
+	text-align: right;
+}
+
+div#letterhead-additionalblock > div.right {
+	width: 60%;
+	padding-left: 0.25cm;
+}
+
+div#letterhead-additionalblock td.right {
+	width: 60%;
+	padding-left: 0.25cm;
+}
+
+div#body {
+	position:absolute;
+	top:9.846cm;
+	left: 2.5cm;
+	width: 16.5cm ;
+	font-size: 11pt;
+	/*background-color: silver;*/
+}
+
+div#letterhead-datelocation {
+	text-align: right;
+}
+
+div#subject1, div#subject2 {
+	font-weight: bold;
+	font-size: 11pt;
+}
+
+div#subject2 {
+	margin-bottom: 0.2cm;
+}
+
+#body p {
+	page-break-inside: avoid;
+}
+
+div#textcontent {
+}

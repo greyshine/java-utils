@@ -20,6 +20,20 @@ public abstract class MethodHandler implements IMethodHandler {
 	protected String handleOnPostfix = null;
 	protected Class<?> returnType = null;
 	protected Class<? extends Annotation>[] annotationClasses;
+	/**
+	 * Skip traversing methods declared by {@link Object}.class
+	 */
+	protected Boolean skipObject = false;
+	/**
+	 * Skip methods returning nothing / void
+	 */
+	protected boolean skipReturnVoid = false;
+	
+	/**
+	 * Argument classes the method must have
+	 */
+	protected Class<?>[] methodArguments = null;
+	
 
 	@Override
 	public final boolean handle(Method inMethod) {
@@ -40,6 +54,8 @@ public abstract class MethodHandler implements IMethodHandler {
 			return true;
 		} else if (handleOnlyReturnTypeVoid != null && handleOnlyReturnTypeVoid && inMethod.getReturnType() != void.class) {
 			return true;
+		} else if (skipReturnVoid && inMethod.getReturnType() == void.class) {
+			return true;
 		} else if (handleOnlyNonReturnTypeVoid != null && handleOnlyNonReturnTypeVoid && inMethod.getReturnType() == void.class) {
 			return true;
 		} else if (handleOnlyNoParameters != null && handleOnlyNoParameters && inMethod.getParameterTypes().length > 0) {
@@ -51,6 +67,10 @@ public abstract class MethodHandler implements IMethodHandler {
 		} else if (handleOnPostfix != null && !inMethod.getName().endsWith(handleOnPostfix)) {
 			return true;
 		} else if (handleOnly1ParameterMethod != null && handleOnly1ParameterMethod && inMethod.getParameterTypes().length != 1) {
+			return true;
+		} else if ( Boolean.TRUE.equals( skipObject ) && inMethod.getDeclaringClass() == Object.class ) {
+			return true;
+		} else if ( methodArguments != null && !Utils.isEqualClassArrays(methodArguments, inMethod.getParameterTypes(), false) ) {
 			return true;
 		}
 

@@ -61,7 +61,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonWriter;
 
 public abstract class Utils {
 	
@@ -209,6 +208,13 @@ public abstract class Utils {
 		return equals(inO1, inO2, true);
 	}
 	
+	/**
+	 * TODO: make external equal function which can be injected into Utils; just like the toString() methods
+	 * @param inO1
+	 * @param inO2
+	 * @param isBothNullEqual
+	 * @return
+	 */
 	public static boolean equals(Object inO1, Object inO2, boolean isBothNullEqual) {
 
 		if (inO1 == null && inO2 == null) {
@@ -217,9 +223,33 @@ public abstract class Utils {
 			return false;
 		} else if (inO2 == null && inO1 != null) {
 			return false;
-		}
+		} 
 
 		return inO1.equals(inO2);
+	}
+	
+	public static boolean isEqualByteArrays(byte[] in1, byte[] in2, boolean isBothNullEqual) {
+		
+		if ( in1 == null && in2 == null ) {return isBothNullEqual;  }
+		else if ( in1 == in2 ) { return true; }  
+		else if ( in1 == null || in2 == null ) { return false; }
+		else if ( in1.length != in2.length ) { return false; } 
+		for( int i=0, l=in1.length; i<l;i++ ) {
+			if ( in1[i] != in2[i] ) { return false; }
+		}
+		return true;
+	}
+
+	public static boolean isEqualClassArrays(Class<?>[] in1, Class<?>[] in2, boolean isBothNullEqual) {
+		
+		if ( in1 == null && in2 == null ) {return isBothNullEqual;  }
+		else if ( in1 == in2 ) { return true; }  
+		else if ( in1 == null || in2 == null ) { return false; }
+		else if ( in1.length != in2.length ) { return false; } 
+		for( int i=0, l=in1.length; i<l;i++ ) {
+			if ( in1[i] != in2[i] ) { return false; }
+		}
+		return true;
 	}
 
 	public static boolean notEquals(Object inO1, Object inO2) {
@@ -398,19 +428,29 @@ public abstract class Utils {
 	// Require / Validations
 	// ---------------------
 	
-	/**
-	 * @param inValue
-	 * @return
-	 */
-
+	
+	public static String requireNotBlank(String inValue) {
+		return requireNotNull(inValue, null);
+	}
+	
+	public static String requireNotBlank(String inValue, String inMessage) {
+		
+		if ( isBlank(inValue) ) {
+			
+			throw new IllegalArgumentException( defaultIfBlank( inMessage, "Value must have not have been blank." ) );
+		}
+		
+		return inValue;
+	}
+	
 	public static <T> T requireNotNull(T inValue) {
 		return requireNotNull(inValue, null);
 	}
 	public static <T> T requireNotNull(T inValue, String inMessage) {
 		
-		inMessage = defaultIfBlank( inMessage, "Value must have not have been null." );
-		
 		if ( inValue == null ) {
+			
+			inMessage = defaultIfBlank( inMessage, "Value must have not have been null." );
 			throw new IllegalArgumentException( inMessage );
 		}
 		
@@ -510,19 +550,34 @@ public abstract class Utils {
 		InputStream theIs = null;
 		
 		try {
-			theIs = Thread.currentThread().getContextClassLoader().getResourceAsStream( inResource );
+			theIs = getResourceUrl(inResource).openStream();
 		} catch (Exception e) {
 			// swallow
 		}
 
+		return theIs;
+	}
+
+	public static URL getResourceUrl(String inResource) {
+		
+		if ( inResource == null ) { return null; }
+		
+		URL theIs = null;
+		
 		try {
-			theIs = theIs != null ? theIs : new FileInputStream( new File( inResource ) );
+			theIs = Thread.currentThread().getContextClassLoader().getResource( inResource );
 		} catch (Exception e) {
 			// swallow
 		}
-
+		
 		try {
-			theIs = theIs != null ? theIs : new URL(inResource).openStream();
+			theIs = theIs != null ? theIs : new File( inResource ).toURI().toURL();
+		} catch (Exception e) {
+			// swallow
+		}
+		
+		try {
+			theIs = theIs != null ? theIs : new URL(inResource);
 		} catch (Exception e) {
 			// swallow
 		}
@@ -994,7 +1049,29 @@ public abstract class Utils {
 			}
 		}
 	}
+
+	/**
+	 * Same as readToBytes(...)
+	 * @param inIs
+	 * @param inCloseAfterRead
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] inputStreamToBytes(InputStream inIs, boolean inCloseAfterRead) throws IOException {
+		return readToBytes( inIs, inCloseAfterRead );
+	}
 	
+	/**
+	 * Same as toBytes(...)
+	 * @param inIs
+	 * @param inCloseAfterRead
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] readToBytes(InputStream inIs, boolean inCloseAfterRead) throws IOException {
+		return toBytes(inIs, inCloseAfterRead);
+	}
+
 	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
 		
 		inCharset = defaultIfNull(inCharset, Charset.defaultCharset());
@@ -1365,6 +1442,123 @@ public abstract class Utils {
 	}
 	
 
+	/**
+	 * Stream which redirects read data from Output- to Inputstream.
+	 * 
+	 * TODO: write tests 
+	 *
+	 */
+	public static class OutputInputStreams {
+		private final List<Integer> data =  new ArrayList<>();
+		private boolean closedOutput = false;
+		private boolean closedInput = false;
+		
+		public OutputStream outputStream = new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {
+				
+				synchronized (data) {
+					
+					if ( closedOutput ) {
+						throw new IOException("strem already closed");
+					}
+					
+					if ( !closedInput ) {
+						data.add( b );
+						data.notifyAll();
+					}
+				}
+			}
+			
+			@Override
+			public void close() throws IOException {
+				synchronized (data) {
+					closedOutput = true;
+				}
+			}
+		};
+		
+		public InputStream inputStream = new InputStream() {
+			
+			@Override
+			public int read() throws IOException {
+				
+				synchronized ( data ) {
+				
+					// more data could come but it is not there yet
+					while( !closedOutput && data.isEmpty() ) {
+						try {
+							wait( 1500 );
+						} catch (InterruptedException e) {
+							// swallow
+						}
+					}
+					
+					// input stream has been closed, so reading data is indicated to be finished.  EOF is returned
+					if ( closedInput ) { return -1; }
+
+					// data is not available and no more data will come
+					if ( data.isEmpty() && closedOutput ) {
+						return -1;
+					}
+					
+					return data.remove(0);
+				}
+			}
+			
+			@Override
+			public long skip(long n) throws IOException {
+				
+				long skips = 0;
+				
+				while( n-->0 ) {
+					
+					int r = read();
+					
+					if ( r == -1 ) {
+						break;
+					}
+					
+					skips++;
+				}
+				
+				return skips;
+			}
+
+			@Override
+			public int available() throws IOException {
+				synchronized (data) {
+					return data.size();	
+				}
+			}
+
+			@Override
+			public void close() throws IOException {
+				closedInput = true;
+				synchronized ( data ) {
+					data.clear();
+				}
+			}
+
+			@Override
+			public synchronized void mark(int readlimit) {
+				throw new UnsupportedOperationException("mark not supported");
+			}
+
+			@Override
+			public boolean markSupported() {
+				return false;
+			}
+			
+			
+			
+		};
+
+		public int getBufferSize() {
+			return data.size();
+		}
+		
+	} 
 	
 	//
 	// Json / Gson releated
@@ -2491,7 +2685,4 @@ public abstract class Utils {
 	public static void registerToString(Class<?> inClass, Function<Object,String> inToStringFunction) {
 		FUNCTIONS_TOSTRING.register( inClass, inToStringFunction);
 	}
-
-	
-
 }

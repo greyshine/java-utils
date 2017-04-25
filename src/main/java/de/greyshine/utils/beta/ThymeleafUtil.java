@@ -17,6 +17,10 @@ public abstract class ThymeleafUtil {
 	public static String generateText(String inTemplate, Map<String,Object> inVariables) {
 		return generate( inTemplate, TemplateMode.TEXT, inVariables );
 	}
+
+	public static String generateCss(String inTemplate, Map<String,Object> inVariables) {
+		return generate( inTemplate, TemplateMode.CSS, inVariables );
+	}
 	
 	public static String generateHtml(String inTemplate, Map<String,Object> inVariables) {
 		return generate( inTemplate, TemplateMode.HTML, inVariables );
