@@ -1,36 +1,39 @@
-package de.greyshine.utils.beta.pdfletter;
+package de.greyshine.utils.pdfletter;
 
-import java.io.InputStream;
-import java.net.URL;
+import java.io.IOException;
+import java.time.LocalDateTime;
 
 import de.greyshine.utils.Utils;
-import de.greyshine.utils.beta.pdfletter.PdfLetterRenderer.DataObject;
-import de.greyshine.utils.beta.pdfletter.PdfLetterRenderer.ITemplate;
-import de.greyshine.utils.beta.pdfletter.PdfLetterRenderer.Variable;
+import de.greyshine.utils.pdfletter.PdfLetterRenderer.DataObject;
+import de.greyshine.utils.pdfletter.PdfLetterRenderer.Template;
+import de.greyshine.utils.pdfletter.PdfLetterRenderer.Variable;
 
-public class GermanLetterVersion1 implements ITemplate<GermanLetterVersion1.Data> {
+public class GermanLetterVersion1 extends Template<GermanLetterVersion1.Data> {
 	
-	final String basepath = getClass().getPackage().getName().replace('.', '/');
+	private static final GermanLetterVersion1 INSTANCE = new GermanLetterVersion1();
 	
-	public GermanLetterVersion1() {}
 	
-	@Override
-	public URL getHtml() {
-		return Utils.getResourceUrl( basepath+"/din-a4.v1.html" );
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static PdfLetterRenderer<Data> newPdfLetterRenderer() {
+		try {
+			return new PdfLetterRenderer( getInstance() );
+		} catch (IOException e) {
+			throw Utils.toRuntimeException( e );
+		}
+	}
+	
+	public static GermanLetterVersion1 getInstance() {
+		return INSTANCE;
 	}
 
-	@Override
-	public InputStream getUriStream(String inName) {
-		return Utils.getResource( basepath+"/"+ inName );
+	private GermanLetterVersion1() {
+		super( "din-a4.v1.html", Data.class );
 	}
-
-	@Override
-	public Class<?> getDataObjectClass() {
-		return Data.class;
-	}
-
-	public static class Data implements DataObject {
+	
+	public static class Data extends DataObject {
 		
+		private static final long serialVersionUID = -87407072833411195L;
+
 		@Variable("image")
 		public String topImageBase64;
 
@@ -74,10 +77,19 @@ public class GermanLetterVersion1 implements ITemplate<GermanLetterVersion1.Data
 		public String footerleft;
 		public String footerright;
 		
-		public boolean showPageNumbers = false;
+		public String leftBorderImageSrc;
 		
+		/**
+		 * does not work. I did not understand Thymeleaf or thymeleaf does not render properly. 
+		 */
+		@Deprecated
+		public boolean displayPageNumbers = false;
+		public boolean escapeHtml = true;
+				
 		@Override
 		public void init() {
+			
+			date = Utils.trimToDefault(date, Utils.formatDate( "dd.MM.yyyy", LocalDateTime.now() ));
 			
 			extraline1left = Utils.defaultIfBlank( extraline1left , "&#160;");
 			extraline1right = Utils.defaultIfBlank( extraline1right , "&#160;");
@@ -109,6 +121,29 @@ public class GermanLetterVersion1 implements ITemplate<GermanLetterVersion1.Data
 			extraline9left = Utils.defaultIfBlank( extraline2left , "&#160;");
 			extraline9right = Utils.defaultIfBlank( extraline2right , "&#160;");
 			
+			lettertext = Utils.trimToEmpty( lettertext );
+			
+			final StringBuilder theLetterText = new StringBuilder(); 
+			
+			for( String aLine : lettertext.split( "\n" , -1) ) {
+				
+				if ( aLine.trim().replaceAll("\\s", "").equalsIgnoreCase( MARKERLINE_PAGEBREAK.replaceAll("\\s", "") ) ) {
+					
+					theLetterText.append( HTML_PAGEBREAK );
+				
+				} else if ( escapeHtml ) {
+				
+					theLetterText.append( PdfLetterRenderer.getHtmlSafeText( aLine ) );
+				
+				} else {
+					
+					theLetterText.append( aLine );
+				}
+				
+				theLetterText.append( '\n' );
+			}
+			
+			lettertext = theLetterText.toString();
 		}
 
 		@Variable("locationdate")

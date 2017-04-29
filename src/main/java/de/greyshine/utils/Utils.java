@@ -1071,6 +1071,32 @@ public abstract class Utils {
 	public static byte[] readToBytes(InputStream inIs, boolean inCloseAfterRead) throws IOException {
 		return toBytes(inIs, inCloseAfterRead);
 	}
+	
+	public static void write( File inFile, byte[] inBytes) throws IOException {
+		
+		mkParentDirs(inFile);
+		
+		try(FileOutputStream fos = new FileOutputStream( inFile ) ) {
+			fos.write( inBytes );
+			fos.close();
+		}
+	}
+	
+	public static void write( String inFile, byte[] inBytes) throws IOException {
+		
+		final File theFile = new File( inFile );
+		
+		mkParentDirs(theFile);
+		
+		try(FileOutputStream fos = new FileOutputStream( theFile ) ) {
+			fos.write( inBytes );
+			fos.close();
+		}
+	}
+	
+	public void write( File inFile, InputStream inIs) throws IOException {
+		copy(inIs, inFile);
+	}
 
 	public static String readToString(InputStream inputStream, Charset inCharset) throws IOException {
 		
@@ -2128,6 +2154,11 @@ public abstract class Utils {
 	// --------------------------------------
 	// Text formating
 	// --------------------------------------
+	/**
+	 * Formats e.g. into <tt>12d04h0m57s789ms</tt>
+	 * @param inMillis
+	 * @return
+	 */
 	public static String formatTime(Long inMillis) {
 
 		if (inMillis == null) {

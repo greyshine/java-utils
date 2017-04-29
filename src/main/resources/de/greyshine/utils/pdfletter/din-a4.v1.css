@@ -8,9 +8,11 @@
 	@bottom-left {
 		content: element(footer-left);
 	}
+	
 	@bottom-center {
 		content: element(footer-center);
 	}
+	
 	@bottom-right {
 		content: element(footer-right);
 	}
@@ -18,10 +20,20 @@
 
 @page:first {
 	margin-top: 1cm;
+	@bottom-right {}
 }
 
+img#left-border-image {
+	position: fixed;
+	top: 17cm;
+	left: 0.6cm;
+}
+
+
 #pagenumber:before {
-    content: counter(page);
+   /* Does not work, probably a bug
+   content: '[# th:text="${displayPageNumbers}?counter(page):''" /]';
+   */
 }
    
 #pagecount:before {

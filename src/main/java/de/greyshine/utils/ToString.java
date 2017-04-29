@@ -8,6 +8,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+
 public class ToString {
 
 	private Map<Class<?>, Function<Object, String>> tostringers = new LinkedHashMap<>();
@@ -94,6 +99,21 @@ public class ToString {
 			}
 			
 			return s.append( ']' ).toString();
+		}
+	};
+	
+	public final static Function<Object, String> TOSTRINGER_JSON = new Function<Object,String>() {
+		
+		private final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+		
+		@Override
+		public final String apply(Object inJson) {
+			
+			inJson = inJson == null ? JsonNull.INSTANCE : inJson;
+			
+			if ( !(inJson instanceof JsonElement) ) { return TOSTRINGER_DEFAULT.apply( inJson ); }
+			
+			return GSON.toJson( inJson );
 		}
 	};
 	

@@ -1,11 +1,13 @@
-package de.greyshine.utils.beta.pdfletter;
+package de.greyshine.utils.pdfletter;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -13,9 +15,11 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 import org.apache.commons.cli.UnrecognizedOptionException;
 import org.thymeleaf.TemplateEngine;
@@ -44,12 +48,16 @@ import de.greyshine.utils.Utils.OutputInputStreams;
  * All public fields and methods are used as variables by their name.<br/>
  * If a member or method is annotated with @{@link Variable} it is used as well as a variable and if the value is not blank, it is used as well as a variable.<br/>
  * <br/>
- * In order to add functionalities like initialization on a data object, let it implement the IDataObject interface.
+ * In order to add functionalities like initialization on a data object, let it implement the IDataObject interface.<br/>
+ * <br/>
  *
  * @param <T> Type of the data object
  */
-public class PdfLetterRenderer<T> {
-
+public class PdfLetterRenderer<T extends PdfLetterRenderer.DataObject> {
+	
+	public static final String SPACE_ENTITY = "&#160;";
+	public static final String SPACE_ENTITY_TAB = "&#160;&#160;&#160;&#160;";
+	
 	private static final TemplateEngine THYMELEAF_TEMPLATEENGINE = new TemplateEngine();
 
 	private final ITemplate<?> templateInformation;
@@ -59,8 +67,11 @@ public class PdfLetterRenderer<T> {
 	private Map<String,Field> dataFields = new HashMap<>(0);
 	private Map<String,Method> dataMethods = new HashMap<>(0);
 	
-	final Class<?> dataObjectClass;
-
+	private final Class<? extends DataObject> dataObjectClass;
+	private final String uriBasepath;
+	
+	private boolean allowInternetUrlStreaming = false;
+	
 	public PdfLetterRenderer(ITemplate<T> inTemplateInformation) throws IOException {
 		
 		Utils.requireNotNull( inTemplateInformation, "given ITemplate is null" );
@@ -81,9 +92,11 @@ public class PdfLetterRenderer<T> {
 		
 		dataObjectClass = inTemplateInformation.getDataObjectClass();
 		
-		if ( dataObjectClass != null && !ReflectionUtils.isDefaultConstructorAvailable( dataObjectClass ) ) {
+		if ( dataObjectClass == null || !ReflectionUtils.isDefaultConstructorAvailable( dataObjectClass ) ) {
 			throw new IllegalArgumentException( "data-object class is not declaring a default constructor at "+ inTemplateInformation );
 		}
+		
+		uriBasepath = dataObjectClass.getPackage().getName().replace( '.' , '/')+"/";
 		
 		newDataObject();
 		
@@ -142,6 +155,22 @@ public class PdfLetterRenderer<T> {
 		}
 	}
 	
+	public PdfLetterRenderer<T> allowInternetUrlStreaming(boolean inAllowInternetUrlStreaming) {
+		allowInternetUrlStreaming = inAllowInternetUrlStreaming;
+		return this;
+	}
+	
+	/**
+	 * @return <code>true</code> in order to allow URI lookups from the HTML into public internet
+	 */
+	public boolean isAllowInternetUrlStreaming() {
+		return allowInternetUrlStreaming;
+	}
+
+	public void setAllowInternetUrlStreaming(boolean allowInternetUrlStreaming) {
+		this.allowInternetUrlStreaming = allowInternetUrlStreaming;
+	}
+	
 	public void render(T inData, OutputStream inOs) throws Exception {
 		
 		if ( inOs == null ) {
@@ -149,6 +178,9 @@ public class PdfLetterRenderer<T> {
 		}
 		
 		final Map<String,Object> theVariables = dataToVariables(inData);
+		
+		
+		
 		
 		final InputStream theXhtmlIs = runThymeleaf( new ByteArrayInputStream( xhtmlDocument.getBytes( Utils.CHARSET_UTF8 ) ) , TemplateMode.HTML, theVariables);
 		final Document theDocument = XMLResource.load(new InputSource( theXhtmlIs )).getDocument();
@@ -161,6 +193,15 @@ public class PdfLetterRenderer<T> {
 		
 		resourceLoaderUserAgent.setSharedContext( theSharedContext );
 		theSharedContext.setUserAgentCallback( resourceLoaderUserAgent );
+		/*
+		 * Seems that only a fixed set of meta names is provided
+		 * Self created / names I have not seen in the raw PDF code
+		 */
+		renderer.getOutputDevice().addMetadata( "title" , inData.meta.title);
+		renderer.getOutputDevice().addMetadata( "author" , inData.meta.author);
+		renderer.getOutputDevice().addMetadata( "subject" , inData.meta.subject);
+		renderer.getOutputDevice().addMetadata( "keywords" , inData.meta.keywords);
+		renderer.getOutputDevice().addMetadata( "created-by" ,  getClass().getTypeName()+"_"+ LocalDateTime.now().toString() );
 		
 		renderer.setDocument( theDocument, "");
         renderer.layout();
@@ -177,9 +218,7 @@ public class PdfLetterRenderer<T> {
 			return theVariables;
 		}
 		
-		if ( inData instanceof DataObject ) {
-			((DataObject)inData).init();
-		}
+		inData.init();
 		
 		for( Entry<String,Field> aFieldEntry : dataFields.entrySet() ) {
 			
@@ -207,6 +246,11 @@ public class PdfLetterRenderer<T> {
 			theVariables.put( aMethodEntry.getKey(), o);
 		}
 		
+		if ( inData.postInit != null ) {
+			
+			inData.postInit.accept( theVariables );
+		}
+		
 		return theVariables;
 	}
 
@@ -222,13 +266,16 @@ public class PdfLetterRenderer<T> {
 	}
 	
 	public byte[] renderAsBytes(T inData) throws Exception {
-		return Utils.toBytes( render( inData ) );
+		final ByteArrayOutputStream baos= new ByteArrayOutputStream();
+		render( inData, baos );
+		return baos.toByteArray();
 	}
 	
 	/**
 	 * 
 	 * @return creates a new DataObject for holding variables to be used in a rendering process.
 	 */
+	@SuppressWarnings("unchecked")
 	public T newDataObject() {
 		
 		try {
@@ -237,7 +284,8 @@ public class PdfLetterRenderer<T> {
 				throw new UnrecognizedOptionException( "no data-object class declared with "+ getClass().getTypeName() ); 
 			}
 			
-			return (T) dataObjectClass.newInstance();
+			final DataObject theDataObject = dataObjectClass.newInstance();
+			return (T)theDataObject;
 			
 		} catch (Exception e) {
 			throw Utils.toRuntimeException( e );
@@ -255,9 +303,11 @@ public class PdfLetterRenderer<T> {
 			final Context thymeleafContext = new Context();
 			thymeleafContext.setVariables( inVariables );
 			
-			final String theHtml = THYMELEAF_TEMPLATEENGINE.process( theTemplateSpec , thymeleafContext); 
+			final String theOutput = THYMELEAF_TEMPLATEENGINE.process( theTemplateSpec , thymeleafContext); 
 			
-			return new ByteArrayInputStream( theHtml.getBytes( Utils.CHARSET_UTF8 ) );
+			//System.out.println( theOutput );
+			
+			return new ByteArrayInputStream( theOutput.getBytes( Utils.CHARSET_UTF8 ) );
 		
 		} catch(Exception e) {
 
@@ -282,7 +332,67 @@ public class PdfLetterRenderer<T> {
 		
 		URL getHtml();
 		InputStream getUriStream(String inUri);
-		Class<?> getDataObjectClass();
+		Class<T> getDataObjectClass();
+	}
+	
+	/**
+	 * Template template based for resource lookups on the package of the implementing class.<br/>
+	 * Resources are expected within the same package.<br/>
+	 * @param <T>
+	 */
+	public static abstract class Template<T extends PdfLetterRenderer.DataObject> implements ITemplate<T> {
+		
+		public static final String MARKERLINE_PAGEBREAK = "<br clear=\"page\"/>";
+		public static final String HTML_PAGEBREAK = "<p style=\"page-break-before: always;\"/>";
+		
+		private String uriLookupBasepath;
+		private final Class<T> dataObjectClass;
+		private URL htmlTemplateUrl;
+		
+		public Template(String inHtmlTemplate, Class<T> dataObjectClass) {
+			
+			Utils.requireNotNull(dataObjectClass, "no data object class provided");
+			
+			this.dataObjectClass = dataObjectClass;
+			
+			uriLookupBasepath = dataObjectClass.getPackage().getName().replace('.', '/')+"/";
+			
+			htmlTemplateUrl = Utils.getResourceUrl( uriLookupBasepath+inHtmlTemplate );
+			
+			Utils.requireNotNull(htmlTemplateUrl, "no proper html template found at "+uriLookupBasepath+inHtmlTemplate);
+		}
+		
+		@Override
+		public final URL getHtml() {
+			return htmlTemplateUrl;
+		}
+
+		public final InputStream getUriStream(String inUri) {
+			return Utils.getResource( uriLookupBasepath+"/"+ inUri );
+		}
+		
+		@Override
+		public final Class<T> getDataObjectClass() {
+			return dataObjectClass;
+		}
+		
+		@Override
+		public String toString() {
+			return getClass().getTypeName()+" [template="+ htmlTemplateUrl +", dataObjectClass="+ dataObjectClass.getTypeName() +"]";
+		}
+	}
+	
+	public static String getHtmlSafeText(String inText) {
+		
+		if ( inText == null ) { return ""; }
+		
+		inText = inText.replaceAll("&", "&amp;"); // this needs to happen at very first
+		inText = inText.replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;");
+		
+		inText = inText.replaceAll("\r","").replaceAll("\n", "<br/>");
+		inText = inText.replaceAll(" ", SPACE_ENTITY).replaceAll("\t", SPACE_ENTITY_TAB);
+		
+		return inText;
 	}
 	
 	/**
@@ -290,11 +400,30 @@ public class PdfLetterRenderer<T> {
 	 * @author greyshine
 	 *
 	 */
-	public interface DataObject {
+	public static abstract class DataObject implements Serializable {
+		
+		private static final long serialVersionUID = -3116759768389797456L;
+
+		public final Meta meta = new Meta();
+
+		Consumer<Map<String,Object>> postInit = null;
+		
 		/**
 		 * Method called in the rendering process as step 1.
 		 */
-		void init();
+		public void init() {}
+		
+		/**
+		 * Register callback method which is applied as last step of the init method.<br/>
+		 * The init method is overwritten by an implementation of a PDF generator as part of an implemented {@link ITemplate}.<br/>
+		 * On the other hand, the callback method postInit can be inserted at runtime by client rendering some data.  
+		 * @param inConsumer
+		 * @return
+		 */
+		public DataObject postInit(Consumer<Map<String,Object>> inConsumer ) {
+			postInit = inConsumer;
+			return this;
+		}
 	}
 
 	private class ResourceLoaderUserAgent extends ITextUserAgent {
@@ -320,7 +449,7 @@ public class PdfLetterRenderer<T> {
         	InputStream theIs = null;
         	
         	try {
-				theIs = Utils.getResource( uri );
+				theIs = Utils.getResource( uriBasepath+uri );
 			} catch (Exception e) {
 				throw Utils.toRuntimeException(e);
 			}
@@ -328,14 +457,14 @@ public class PdfLetterRenderer<T> {
         	if ( theIs == null ) {
         		
         		theIs = templateInformation.getUriStream( uri );
-        		
-        		if ( theIs != null && uri.toLowerCase().endsWith(".css") ) {
-
-        			theIs = runThymeleaf( theIs, TemplateMode.CSS, variables );
-        		}
         	}
         	
-        	return theIs != null ? theIs : super.resolveAndOpenStream( uri );
+        	if ( theIs != null && uri.toLowerCase().endsWith(".css") ) {
+
+        		theIs = runThymeleaf( theIs, TemplateMode.CSS, variables );
+        	}
+
+        	return theIs != null || !allowInternetUrlStreaming ? theIs : super.resolveAndOpenStream(uri);
         }
     }
 	
@@ -346,7 +475,16 @@ public class PdfLetterRenderer<T> {
 		 * Name of the variable
 		 * @return
 		 */
-		String value();
+		String value() default "";
+	}
+	
+	public final static class Meta implements Serializable {
+		
+		public String title;
+		public String subject;
+		public String author;
+		public String keywords;
+		
 	}
 	
 }

@@ -10,6 +10,8 @@
 		<div id="letter-faltmarke"></div>
 		<div id="letter-lochmarke"></div>
 		
+		<img id="left-border-image" th:src="${leftBorderImageSrc}" src="" alt="left border image"/>
+		
 		<div id="footer-left" th:utext="${footerleft}">
 			LEFTSIDE LINE1
 		</div>
@@ -41,34 +43,6 @@
 		
 		<div id="letterhead-additionalblock">
 			
-			<!-- /*
-			<div class="left"><span th:utext="${extraline1left}">Ansprechpartner</span></div>
-			<div class="right"><span th:utext="${extraline1right}">Herr Langer Nach-Name</span></div>
-			
-			<div class="left"><span th:utext="${extraline2left}">Zwei</span></div>
-			<div class="right"><span th:utext="${extraline2right}">Zwei2</span></div>
-			
-			<div class="left"><span th:utext="${extraline3left}">&#160;</span></div>
-			<div class="right"><span th:utext="${extraline3right}">Drei3</span></div>
-			
-			<div class="left"><span th:utext="${extraline4left}">Vier</span></div>
-			<div class="right"><span th:utext="${extraline4right}">Vier 4<br/>und<br/>Weiter</span></div>
-			
-			<div class="left"><span th:utext="${extraline5left}">Fünf</span></div>
-			<div class="right"><span th:utext="${extraline5right}">Fünf 5</span></div>
-			
-			<div class="left"><span th:utext="${extraline6left}">Sechs</span></div>
-			<div class="right"><span th:utext="${extraline6right}">Sechs 6</span></div>
-			
-			<div class="left"><span th:utext="${extraline7left}">Sieben</span></div>
-			<div class="right"><span th:utext="${extraline6right}">Sieben 7</span></div>
-			
-			<div class="left"><span th:utext="${extraline8left}">Acht8</span></div>
-			<div class="right"><span th:utext="${extraline8right}">Acht 8</span></div>
-			
-			<div class="left"><span th:utext="${extraline9left}">Neun9</span></div>
-			<div class="right"><span th:utext="${extraline9right}">Neun 9</span></div>
-			*/-->
 			<table>
 				<tr>
 					<td class="left"><span th:utext="${extraline1left}">Ansprechpartner</span></td>
@@ -128,7 +102,8 @@
 			
 				<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
 				<p>Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo.</p>
-				<p style="page-break-before: always;">Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim.</p>
+				<p style="page-break-before: always;"/>
+				<p>Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim.</p>
 				<p>Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus.</p>
 				<p>Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus.</p>
 				<p>Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna.</p>
