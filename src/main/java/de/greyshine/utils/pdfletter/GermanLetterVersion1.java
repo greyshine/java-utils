@@ -140,7 +140,7 @@ public class GermanLetterVersion1 extends Template<GermanLetterVersion1.Data> {
 					theLetterText.append( aLine );
 				}
 				
-				theLetterText.append( '\n' );
+				theLetterText.append( "<br/>\n" );
 			}
 			
 			lettertext = theLetterText.toString();

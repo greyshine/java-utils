@@ -179,9 +179,6 @@ public class PdfLetterRenderer<T extends PdfLetterRenderer.DataObject> {
 		
 		final Map<String,Object> theVariables = dataToVariables(inData);
 		
-		
-		
-		
 		final InputStream theXhtmlIs = runThymeleaf( new ByteArrayInputStream( xhtmlDocument.getBytes( Utils.CHARSET_UTF8 ) ) , TemplateMode.HTML, theVariables);
 		final Document theDocument = XMLResource.load(new InputSource( theXhtmlIs )).getDocument();
 		Utils.close( theXhtmlIs );
@@ -368,7 +365,7 @@ public class PdfLetterRenderer<T extends PdfLetterRenderer.DataObject> {
 		}
 
 		public final InputStream getUriStream(String inUri) {
-			return Utils.getResource( uriLookupBasepath+"/"+ inUri );
+			return Utils.getResource( uriLookupBasepath+"/"+ inUri, false );
 		}
 		
 		@Override

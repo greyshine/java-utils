@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -329,7 +328,7 @@ public abstract class Utils {
 	public static <T> T defaultIfNull(T inValue, T inDefault) {
 		return inValue == null ? inDefault : inValue;
 	}
-	
+
 	public static String defaultIfBlank(String inValue, String inDefault) {
 		return inValue == null || inValue.trim().isEmpty() ? inDefault : inValue;
 	}
@@ -375,6 +374,8 @@ public abstract class Utils {
 		return (inValue = inValue.trim()).isEmpty() ? inDefault : inValue; 
 	}
 	
+	
+	
 	public static String unwrap(String inValue, Character inCharacter) {
 		
 		if (inCharacter == null || inValue.length()<2) { return inValue; }
@@ -385,6 +386,81 @@ public abstract class Utils {
 		}
 		
 		return inValue;
+	}
+	
+	/**
+	 * Unwraps some text inbetween of the texts before and after.
+	 * 
+	 * @param inTextToUnwrap
+	 * @param inTextBefore
+	 * @param inTextAfter
+	 * @return
+	 */
+	public static String unwrap(String inTextToUnwrap, String inTextBefore, String inTextAfter) {
+		
+		if ( inTextToUnwrap == null || inTextToUnwrap.isEmpty() ) { return null; }
+		requireNotNull(inTextBefore, "text before is null");
+		requireNotNull(inTextAfter, "text after is null");
+		
+		int idxBefore = inTextToUnwrap.indexOf( inTextBefore );
+		
+		if ( idxBefore < 0 ) { return null; }
+		
+		int idxAfter = inTextToUnwrap.indexOf( inTextAfter, idxBefore+inTextBefore.length() );
+		
+		return idxAfter < idxBefore ? null : inTextToUnwrap.substring( idxBefore+inTextBefore.length(), idxAfter); 
+				
+		
+	}
+	
+	public static List<String> grep(String inString, final String... inGreps) {
+		
+		if ( inString == null || inGreps == null || inGreps.length == 0 ) { return null; }
+		
+		final List<String> theLines = new ArrayList<>();
+		
+		for( String aLine : inString.split("\n",-1) ) {
+			
+			boolean insert = true;
+			
+			for( String aGrep : inGreps ) {
+				
+				if ( aGrep == null ) { continue; }
+				else if ( !aLine.contains( aGrep ) ) { insert = false; break; }
+
+			}
+			
+			if ( insert ) {
+				theLines.add( aLine );
+			}
+		}
+		
+		return theLines;
+	}
+
+	public static List<String> egrep(String inString, final String... inEgreps) {
+		
+		if ( inString == null || inEgreps == null || inEgreps.length == 0 ) { return null; }
+		
+		final List<String> theLines = new ArrayList<>();
+		
+		for( String aLine : inString.split("\n",-1) ) {
+			
+			boolean insert = true;
+			
+			for( String anEgrep : inEgreps ) {
+				
+				if ( anEgrep == null ) { continue; }
+				else if ( !isMatch( aLine, ".*"+ anEgrep +".*")  ) { insert = false; break; }
+				
+			}
+			
+			if ( insert ) {
+				theLines.add( aLine );
+			}
+		}
+		
+		return theLines;
 	}
 	
 	public static RuntimeException toRuntimeException(Throwable e) {
@@ -544,21 +620,31 @@ public abstract class Utils {
 	 * @return
 	 */
 	public static InputStream getResource(String inResource) {
-		
-		if ( inResource == null ) { return null; }
-		
+		return getResource(inResource, true);
+	}
+
+	public static InputStream getResource(String inResource, final boolean inAllowUrlResolution) {
+
 		InputStream theIs = null;
 		
 		try {
-			theIs = getResourceUrl(inResource).openStream();
+			
+			theIs = inResource == null ? null : getResourceUrl(inResource, inAllowUrlResolution).openStream();
+		
 		} catch (Exception e) {
 			// swallow
 		}
 
 		return theIs;
+		
 	}
 
 	public static URL getResourceUrl(String inResource) {
+		
+		return getResourceUrl(inResource, true);
+	}
+
+	public static URL getResourceUrl(String inResource, boolean inAllowUrlResolution) {
 		
 		if ( inResource == null ) { return null; }
 		
@@ -577,7 +663,7 @@ public abstract class Utils {
 		}
 		
 		try {
-			theIs = theIs != null ? theIs : new URL(inResource);
+			theIs = theIs != null || inAllowUrlResolution == false ? theIs : new URL(inResource);
 		} catch (Exception e) {
 			// swallow
 		}
@@ -1021,6 +1107,29 @@ public abstract class Utils {
 		}
 	}
 	
+	public static int writeFile(File inFile, String inValue) throws IOException {
+	
+		return writeFile( inFile, inValue, CHARSET_UTF8 );
+	}
+	
+	public static int writeFile(File inFile, String inValue, Charset inCharset) throws IOException {
+		
+		mkParentDirs( inFile );
+
+		inValue = inValue == null ? "" : inValue;
+		inCharset = inCharset == null ? CHARSET_UTF8 : inCharset;
+		
+		final byte[] bytes = inValue.getBytes(inCharset); 
+		
+		try (FileOutputStream fos = new FileOutputStream(inFile)) {
+			
+			fos.write( bytes );
+			fos.flush();
+		} 
+		
+		return bytes.length;
+	}
+	
 	public static String readFileToString(File inFile, Charset inCharset) throws IOException {
 		return readToString(inFile, inCharset);
 	}
@@ -1275,6 +1384,124 @@ public abstract class Utils {
 	
 	public static void copy(InputStream inInputStream, File inTargetFile) throws IOException {
 		copy( inInputStream, inTargetFile, true ); 
+	}
+	
+	// --------------------------
+	// Console
+	// --------------------------
+	public static Exception runConsoleQuietly(File inDirectory, String... inArgs) {
+
+		int theResultCode;
+
+		try {
+
+			theResultCode = runConsole(inDirectory, DEV0, inArgs);
+
+			if (theResultCode != 0) {
+
+				throw new UnsupportedOperationException("running command returned " + theResultCode);
+			}
+
+		} catch (IOException | InterruptedException e) {
+
+			return e;
+		}
+
+		return null;
+	}
+
+	public static String runConsole(File inDirectory, String... inArgs) throws IOException, InterruptedException {
+
+		final ByteArrayOutputStream theOutBaos = new ByteArrayOutputStream();
+		final ByteArrayOutputStream theErrBaos = new ByteArrayOutputStream();
+
+		final int theResultCode = runConsole(inDirectory, theOutBaos, theErrBaos, inArgs);
+
+		if (theResultCode != 0) {
+
+			throw new IOException("Operation failed [code=" + theResultCode + ", args=" + Arrays.toString(inArgs)
+					+ ", dev1=" + theErrBaos.toString() + "]");
+		}
+		
+		final String theResult = theOutBaos.toString();
+
+		return theResult.isEmpty() ? null : theResult;
+	}
+
+	public static int runConsole(File inDirectory, OutputStream inOut, String... inArgs)
+			throws IOException, InterruptedException {
+
+		return runConsole(inDirectory, inOut, null, null, inArgs);
+	}
+
+	public static int runConsole(File inDirectory, OutputStream inOut, OutputStream inErrOut, String... inArgs)
+			throws IOException, InterruptedException {
+
+		return runConsole(inDirectory, inOut, inErrOut, null, inArgs);
+	}
+
+	public static int runConsole(File inDirectory, OutputStream inOut, OutputStream inErrOut, InputStream inIn,
+			String... inArgs) throws IOException, InterruptedException {
+
+		if (inIn != null) {
+
+			throw new IllegalArgumentException("Unsupported read of input");
+		}
+
+		if (inArgs == null) {
+
+			inArgs = EMPTY_STRINGS;
+		}
+
+		for (int i = 0; i < inArgs.length; i++) {
+
+			inArgs[i] = inArgs[i] == null ? "" : inArgs[i];
+		}
+
+		final ProcessBuilder theProcessBuilder = new ProcessBuilder(inArgs);
+		theProcessBuilder.directory(inDirectory == null || inDirectory.isFile() ? new File(".") : inDirectory);
+
+		final Process theProcess = theProcessBuilder.start();
+
+		inOut = inOut == null ? System.out : inOut;
+		inErrOut = inErrOut == null ? System.err : inErrOut;
+
+		new ConsoleStreamListener(theProcess.getInputStream(), inOut);
+		new ConsoleStreamListener(theProcess.getErrorStream(), inErrOut);
+
+		return theProcess.waitFor();
+	}
+
+	private static class ConsoleStreamListener {
+		/**
+		 * @param inInputStream
+		 * @param inPrefix
+		 *            prefix einer jeden Ausgabezeile
+		 */
+		public ConsoleStreamListener(final InputStream inInputStream, final OutputStream inOut) {
+
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+
+					try {
+
+						int r;
+
+						while ((r = inInputStream.read()) != EOF_STREAM) {
+
+							inOut.write(r);
+						}
+
+					} catch (final IOException e) {
+
+						e.printStackTrace();
+					}
+				}
+
+			}).start();
+		}
 	}
 	
 	// --------------------------
@@ -2346,6 +2573,10 @@ public abstract class Utils {
 		return theDtf.format( inTime );
 	}
 	
+	public static LocalDateTime parseDate(String inPattern, String inDate) {
+		return LocalDateTime.parse( inDate , new DateTimeFormatterBuilder().appendPattern( inPattern ).toFormatter());
+	}
+	
 	// ---------------
 	// Thread releated
 	// ---------------
@@ -2423,6 +2654,8 @@ public abstract class Utils {
  	public static <T,U> U executeQuietly(Function<T,U> inFunction ) {
  		return executeQuietly(null, null, inFunction);
  	}
+ 	
+
 
  	public static <T> void executeQuietly(T inValue, Consumer<T> inConsumer ) {
  		
@@ -2716,4 +2949,22 @@ public abstract class Utils {
 	public static void registerToString(Class<?> inClass, Function<Object,String> inToStringFunction) {
 		FUNCTIONS_TOSTRING.register( inClass, inToStringFunction);
 	}
+
+	public static String concatLines(Collection<String> inLines, String inSeparator) {
+		
+		if ( inLines == null ) { return ""; }
+		
+		inSeparator = defaultIfNull(inSeparator, "");
+		
+		final StringBuilder sb = new StringBuilder();
+		
+		final Iterator<String> i = inLines.iterator();
+	
+		while( i.hasNext() ){
+			sb.append( i.next() ).append( i.hasNext() ? inSeparator : "" );
+		}
+		
+		return sb.toString();
+	}
+	
 }

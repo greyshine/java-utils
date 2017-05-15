@@ -852,6 +852,28 @@ public abstract class Utils {
 		return trim(inValue, "");
 	}
 
+	public static String[] trimAllToEmpty(String[] inValue) {
+		
+		if ( inValue == null ) { return inValue; }
+		
+		for (int i = 0, l=inValue.length; i < l; i++) {
+			inValue[i] = trimToEmpty(inValue[i]);
+		}
+		
+		return inValue;
+	}
+
+	public static String[] trimAllToNull(String... inValue) {
+		
+		if ( inValue == null ) { return inValue; }
+		
+		for (int i = 0, l=inValue.length; i < l; i++) {
+			inValue[i] = trimToNull(inValue[i]);
+		}
+		
+		return inValue;
+	}
+
 	public static Properties loadProperties(File in) throws IOException {
 
 		return loadProperties(
@@ -3051,7 +3073,7 @@ public abstract class Utils {
 	 */
 	public static List<String> extractPatterns(String inString, boolean inStrict, String... inRegexs) {
 
-		final List<String> theResults = new ArrayList<String>(inRegexs == null ? 0 : inRegexs.length);
+		final List<String> theResults = new ArrayList<>(inRegexs == null ? 0 : inRegexs.length);
 
 		if (Utils.isBlank(inString) || isBlank(inRegexs)) {
 

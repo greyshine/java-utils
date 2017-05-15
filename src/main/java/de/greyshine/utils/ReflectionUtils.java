@@ -56,6 +56,24 @@ public abstract class ReflectionUtils {
 		return inValue != null && isNumberClass(inValue.getClass());
 	}
 
+	public static boolean isFieldType(Object inObject, String inFieldName, Class<?> inFieldClassToCheck, boolean checkExactMatch) {
+	
+		if ( inObject == null || inFieldName == null || inFieldClassToCheck == null ) {
+			return false;
+		}
+		
+		Class<?> theFieldClass = null;
+		
+		try {
+			theFieldClass = inObject.getClass().getDeclaredField( inFieldName ).getType();
+		} catch (Exception e) {
+			
+			return false;
+		} 
+		
+		return checkExactMatch ? theFieldClass == inFieldClassToCheck : inFieldClassToCheck.isAssignableFrom( theFieldClass );
+	}
+	
 	public static boolean isFieldValueNull(Field inField, Object inObject) throws IllegalArgumentException, IllegalAccessException {
 
 		final boolean isAccessible = inField.isAccessible();
@@ -137,6 +155,26 @@ public abstract class ReflectionUtils {
 				inField.setAccessible(false);
 			}
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> T getFieldValueSafe(String inFieldName, Object inObject) {
+		
+		try {
+
+			return (T)getFieldValue(inFieldName, inObject );
+			
+		} catch (Exception e) {
+			// swalloow
+			return null;
+		}
+	}
+
+	public static <T> T getFieldValue(String inFieldName, Object inObject) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		
+		final Field theField = inObject.getClass().getDeclaredField( inFieldName );
+		
+		return getFieldValue(theField, inObject);
 	}
 
 	public static boolean isPublicEmptyConstructor(Class<?> inClass) {
@@ -859,12 +897,15 @@ public abstract class ReflectionUtils {
 	}
 
 	public static boolean isAbstract(Field inField) {
-
 		return inField != null && Modifier.isAbstract(inField.getModifiers());
 	}
 
 	public static boolean isFinal(Field inField) {
 		return inField != null && Modifier.isFinal(inField.getModifiers());
+	}
+	
+	public static boolean isTransient(Field inField) {
+		return inField != null && Modifier.isTransient(inField.getModifiers());
 	}
 
 	public static boolean isFinal(Method inMethod) {
@@ -1092,4 +1133,5 @@ public abstract class ReflectionUtils {
 		
 		return theMethod.value;
 	}
+	
 }
