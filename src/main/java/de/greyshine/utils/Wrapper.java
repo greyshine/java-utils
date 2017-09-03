@@ -55,12 +55,16 @@ public class Wrapper<T> {
 		return value != null;
 	}
 	
-	public boolean isBlankString() {
+	public boolean isEmptyString() {
 		return value instanceof String && ((String)value).isEmpty();
 	}
 	
+	public boolean isBlankString() {
+		return value instanceof String && ((String)value).trim().isEmpty();
+	}
+	
 	public boolean isNotBlankString() {
-		return value instanceof String && !((String)value).isEmpty();
+		return !isBlankString();
 	}
 	
 	public void consume(Consumer<? super T> inConsumer) {

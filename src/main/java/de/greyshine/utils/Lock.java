@@ -2,25 +2,26 @@ package de.greyshine.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public abstract class Lock {
+import de.greyshine.utils.Utils.IExecuter;
+
+public class Lock {
 
 	static final Log LOG = LogFactory.getLog(Lock.class);
 
-	private static List<LockItem> lockItems = new ArrayList<LockItem>(1);
-	public static volatile long wait_interval = 10 * 1000;
+	private List<LockItem> lockedItems = new ArrayList<LockItem>(1);
+	private Object syncObject = new Object();
+	private static final long WAIT_UNLOCK_RECHECK_INTERVAL = 10 * 1000;
 
-	private Lock() {
-	}
-
-	public static void lock() {
+	public void lock() {
 		lock(null);
 	}
 	
-	public static void lock(Object inObject) {
+	public void lock(Object inObject) {
 
 		try {
 
@@ -32,29 +33,32 @@ public abstract class Lock {
 			throw new RuntimeException("Must never happen. Sorry.", e);
 		}
 	}
+	
+	public void lock(Object inObject, Long inMaxWaitTime) throws TimeoutException {
 
-	public static void lock(Object inObject, Long inMaxWaitTime) throws TimeoutException {
+		final Long theMaxTime = inMaxWaitTime == null || inMaxWaitTime < 1 ? null : System.currentTimeMillis() + inMaxWaitTime;
 
-		final Long maxTime = inMaxWaitTime == null || inMaxWaitTime < 1 ? null : System.currentTimeMillis() + inMaxWaitTime;
+		if (theMaxTime != null) {
 
-		if (maxTime != null) {
-
-			LOG.debug("Will wait until " + maxTime + "; now=" + System.currentTimeMillis());
+			LOG.debug("Will wait until " + theMaxTime + "; now=" + System.currentTimeMillis());
 		}
 
-		synchronized (lockItems) {
+		synchronized ( syncObject ) {
 
 			while (isLock(inObject)) {
 
-				if (maxTime != null && System.currentTimeMillis() >= maxTime) {
+				// if wanted - if a time is set
+				// check if time to wait for unlocking ended
+				if (theMaxTime != null && System.currentTimeMillis() >= theMaxTime) {
 
-					unlock(inObject);
-					throw new TimeoutException(inObject, System.currentTimeMillis() - maxTime, inMaxWaitTime);
+					throw new TimeoutException(inObject, System.currentTimeMillis() - theMaxTime, inMaxWaitTime);
 				}
-
+				
 				try {
 
-					lockItems.wait(maxTime != null ? Math.max(1, maxTime - System.currentTimeMillis() + 1) : wait_interval < 0 ? wait_interval : 10000);
+					final long timeToWaitUntilRecheck = theMaxTime != null ? Math.max(1, theMaxTime - System.currentTimeMillis() + 1) : WAIT_UNLOCK_RECHECK_INTERVAL < 0 ? WAIT_UNLOCK_RECHECK_INTERVAL : 10000;
+					
+					syncObject.wait( timeToWaitUntilRecheck );
 
 				} catch (final InterruptedException e) {
 
@@ -62,43 +66,71 @@ public abstract class Lock {
 					// swallow
 				}
 			}
+			
+			// waiting for the unlocked object is done
+			// no lock it yourself
+			
+			final LockItem theLockItem = new LockItem(inObject);
 
-			lockItems.add(new LockItem(inObject));
+			lockedItems.add( theLockItem );
 
 			LOG.debug("locked " + inObject + " for " + Thread.currentThread());
 		}
 	}
 
-	public static void unlock() {
+	public void unlock() {
 
-		unlock(null);
+		unlock(null, false);
 	}
 
-	public static void unlock(Object inObject) {
+	public void unlock(Object inObject) {
+		unlock( inObject, false );
+	}
+	
+	public void unlock(Object inObject, boolean inForce) {
 
-		synchronized (lockItems) {
+		synchronized (syncObject) {
 
-			for (int i = lockItems.size() - 1; i >= 0; i--) {
+			for (int i = 0, l = lockedItems.size(); i < l; i++) {
 
-				if (lockItems.get(i).isMatch(inObject)) {
+				final LockItem theLockItem = lockedItems.get( i );
+				
+				if ( theLockItem.object != inObject ) {
+					
+					continue;
+				}
+				
+				if ( !inForce && theLockItem.thread != Thread.currentThread() ) {
+					throw new IllegalStateException( "wrong thread unlocking object [object="+ theLockItem.object +", thread="+ Thread.currentThread() +", expectedThread="+ theLockItem.thread +"]" );
+				}
+				
+				lockedItems.remove( theLockItem );
+				LOG.debug("unlocked [forced="+ inForce +", object="+ theLockItem.object +", thread="+ Thread.currentThread() +"]");
+				
+				// intended == equals compare!
+				if (lockedItems.get(i) == inObject ) {
 
-					final LockItem theLockItem = lockItems.remove(i);
-					LOG.debug("unlocked: " + theLockItem.object + " by " + Thread.currentThread());
-					lockItems.notifyAll();
+					syncObject.notifyAll();
 				}
 			}
 		}
 	}
 
-	private static boolean isLock(Object inObject) {
+	/**
+	 * executed in a synchronized(syncObject) scope!
+	 * @param inObject
+	 * @return
+	 */
+	private boolean isLock(Object inObject) {
+		
+		/**
+		 * due to execution in a synchronized(lockObject) scope no concurrent list access must occur
+		 */
+		for (final LockItem aLockItem : lockedItems) {
 
-		final Thread theCt = Thread.currentThread();
+			if (aLockItem == inObject) {
 
-		for (final LockItem aLockItem : lockItems) {
-
-			if (aLockItem.thread != theCt && aLockItem.isMatch(inObject)) {
-
-				LOG.debug("hit locked object " + aLockItem.object + "; " + Thread.currentThread());
+				LOG.debug("hit locked object " + aLockItem.object);
 
 				return true;
 			}
@@ -116,20 +148,6 @@ public abstract class Lock {
 
 			this.object = object;
 		}
-
-		boolean isMatch(Object inObject) {
-
-			if (inObject == object) {
-
-				return true;
-
-			} else if (object == null && inObject != null) {
-
-				return false;
-			}
-
-			return object.equals(inObject);
-		}
 	}
 
 	public static class TimeoutException extends Exception {
@@ -140,5 +158,17 @@ public abstract class Lock {
 
 			super("Timeout for waiting of unlock [object=" + inLock + ", overtime=" + inOvertime + ", waitTime=" + inMaxWaitTime + ", thread=" + Thread.currentThread() + "]");
 		}
+	}
+	
+	public <T> void doLocked( T inObject, IExecuter<T> inExecuter ) {
+		
+		if ( inExecuter == null ) { return; }
+		
+		lock( inObject );
+		
+		Utils.execute(inExecuter);
+		
+		
+		
 	}
 }

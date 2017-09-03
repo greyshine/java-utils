@@ -81,73 +81,6 @@ public abstract class Utils {
 	
 	private static final Log LOG = LogFactory.getLog(Utils.class);
 
-	public static final int EOF_STREAM = -1;
-
-	public static final OutputStream DEV0 = new OutputStream() {
-		@Override
-		public void write(int arg0) throws IOException {
-		}
-	};
-
-	public static final Class<?>[] EMPTY_CLASSES = new Class<?>[0];
-	public static final Object[] EMPTY_OBJECTS = new Object[0];
-	public static final String[] EMPTY_STRINGS = new String[0];
-	public static final byte[] EMPTY_BYTES = new byte[0];
-	public static final File[] EMPTY_FILES = new File[0];
-	public static final InputStream EMPTY_INPUTSTREAM = new ByteArrayInputStream(new byte[0]);
-	public static final InputStream[] EMPTY_INPUTSTREAMS = new InputStream[0];
-	public static final Map<String, Object> EMPTY_MAP_STRING_OBJECT = Collections
-			.unmodifiableMap(new HashMap<String, Object>(0));
-	public static final Map<String, Object[]> EMPTY_MAP_STRING_OBJECTS = Collections
-			.unmodifiableMap(new HashMap<String, Object[]>(0));
-	public static final Object NULLVALUE = new Object();
-
-	public static final String ALPHABET_0to9 = "0123456789";
-	public static final String ALPHABET_HEX = "0123456789abcdef";
-	public static final String ALPHABET_SMALL = "0123456789abcdefghijklmnopqrstuvwxyz";
-	public static final String ALPHABET_LARGE = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static final Set EMPTY_SET = Collections.unmodifiableSet(new HashSet());
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static final List EMPTY_LIST = Collections.unmodifiableList(new ArrayList());
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static final Map EMPTY_MAP = Collections.unmodifiableMap(new HashMap());
-
-	public static final Random RANDOM = new Random();
-
-	public static final Charset CHARSET_UTF8 = Charset.forName("UTF-8");
-	public static final Charset CHARSET_ISO_8859_1 = Charset.forName("ISO-8859-1");
-
-	public static final BigDecimal BD_1024 = new BigDecimal("1024");
-	public static final BigDecimal BD_360 = new BigDecimal("360");
-	public static final BigDecimal BD_180 = new BigDecimal("180");
-	public static final BigDecimal BD_100 = new BigDecimal("100");
-	public static final BigDecimal BD_90 = new BigDecimal("90");
-	public static final BigDecimal BD_m360 = BD_360.negate();
-	public static final BigDecimal BD_m180 = BD_180.negate();
-	public static final BigDecimal BD_m90 = BD_90.negate();
-
-	public static final BigDecimal BD_FLOAT_MAX = new BigDecimal(Float.MAX_VALUE);
-	public static final BigDecimal BD_FLOAT_MIN = new BigDecimal(Float.MIN_VALUE);
-	public static final BigDecimal BD_DOUBLE_MAX = new BigDecimal(Double.MAX_VALUE);
-	public static final BigDecimal BD_DOUBLE_MIN = new BigDecimal(Double.MIN_VALUE);
-
-	public static final long MILLIS_1_SECOND = 1000L;
-	public static final long MILLIS_1_MINUTE = MILLIS_1_SECOND * 60L;
-	public static final long MILLIS_1_HOUR = MILLIS_1_MINUTE * 60L;
-	public static final long MILLIS_1_DAY = MILLIS_1_HOUR * 24L;
-
-	public static final long BYTES_1KB = 1024;
-	public static final long BYTES_1MB = BYTES_1KB * 1024;
-	public static final long BYTES_1GB = BYTES_1MB * 1024;
-	public static final long BYTES_1TB = BYTES_1GB * 1024;
-	public static final long KILOBYTE_1MB = 1024;
-	public static final long KILOBYTE_1GB = KILOBYTE_1MB * 1024;
-	public static final long KILOBYTE_1TB = KILOBYTE_1GB * 1024;
-	public static final long MEGABYTE_1GB = 1024;
-	public static final long MEGABYTE_1TB = MEGABYTE_1GB * 1024;
-
 	private static final EResourceType[] DEFAULT_RESOURCE_HIERARCHY = new EResourceType[] { EResourceType.CLASSPATH,
 			EResourceType.CONTEXTLOADER_CLASSPATH, EResourceType.FILE, EResourceType.URL };
 
@@ -346,7 +279,7 @@ public abstract class Utils {
 
 		if (inArgs == null) {
 
-			inArgs = EMPTY_STRINGS;
+			inArgs = de.greyshine.utils.Utils.EMPTY_STRINGS;
 		}
 
 		for (int i = 0; i < inArgs.length; i++) {
@@ -385,7 +318,7 @@ public abstract class Utils {
 
 						int r;
 
-						while ((r = inInputStream.read()) != EOF_STREAM) {
+						while ((r = inInputStream.read()) != de.greyshine.utils.Utils.EOF_STREAM) {
 
 							inOut.write(r);
 						}
@@ -448,7 +381,7 @@ public abstract class Utils {
 
 		final List<File> theFiles = new ArrayList<File>(0);
 
-		for (final File aFile : defaultIfNull(inFile.listFiles(), EMPTY_FILES)) {
+		for (final File aFile : defaultIfNull(inFile.listFiles(), de.greyshine.utils.Utils.EMPTY_FILES)) {
 
 			theFiles.add(aFile);
 		}
@@ -474,7 +407,7 @@ public abstract class Utils {
 
 		final List<File> theFiles = new ArrayList<File>(0);
 
-		for (final File aFile : defaultIfNull(inDir.listFiles(), EMPTY_FILES)) {
+		for (final File aFile : defaultIfNull(inDir.listFiles(), de.greyshine.utils.Utils.EMPTY_FILES)) {
 
 			if (aFile.isFile()) {
 
@@ -504,7 +437,7 @@ public abstract class Utils {
 
 		final List<File> theFiles = new ArrayList<File>(0);
 
-		for (final File aFile : defaultIfNull(inDir.listFiles(), EMPTY_FILES)) {
+		for (final File aFile : defaultIfNull(inDir.listFiles(), de.greyshine.utils.Utils.EMPTY_FILES)) {
 
 			if (aFile.isDirectory()) {
 
@@ -894,7 +827,7 @@ public abstract class Utils {
 	@SuppressWarnings("unchecked")
 	public static Properties loadPropertiesQuietly(Properties inProperties, Collection<URL> inUrls) {
 
-		inUrls = inUrls == null ? EMPTY_LIST : inUrls;
+		inUrls = inUrls == null ? de.greyshine.utils.Utils.EMPTY_LIST : inUrls;
 
 		for (final URL anUrl : inUrls) {
 
@@ -1704,7 +1637,7 @@ public abstract class Utils {
 		// System.out.println("iMn:" + inMin + ", iMx: " + inMax + " ; 0.." +
 		// (inMax + inMin) + " :: " + (0 + inMin) + ".." + (inMax + inMin));
 
-		return RANDOM.nextInt(inMax - inMin) + inMin;
+		return de.greyshine.utils.Utils.RANDOM.nextInt(inMax - inMin) + inMin;
 	}
 
 	public static <T> T getRandom(boolean inAllowNull, @SuppressWarnings("unchecked") T... inVals) {
@@ -2050,7 +1983,7 @@ public abstract class Utils {
 
 		long count = 0;
 		int n = 0;
-		while (EOF_STREAM != (n = inInputStream.read(buffer))) {
+		while (de.greyshine.utils.Utils.EOF_STREAM != (n = inInputStream.read(buffer))) {
 			inOutputStream.write(buffer, 0, n);
 			count += n;
 		}
@@ -2900,54 +2833,6 @@ public abstract class Utils {
 		return toStringDataSize(inSize);
 	}
 
-	public static String getReadableTime(Long inMillis) {
-
-		if (inMillis == null) {
-			return null;
-		}
-
-		final boolean isNegative = inMillis < 0;
-
-		inMillis = !isNegative ? inMillis : inMillis * -1;
-
-		final StringBuilder s = new StringBuilder(isNegative ? "-" : "");
-
-		final long theDays = inMillis / MILLIS_1_DAY;
-
-		if (theDays != 0) {
-
-			s.append(theDays).append("d");
-			inMillis -= (theDays * MILLIS_1_DAY);
-		}
-
-		final long theHours = inMillis / MILLIS_1_HOUR;
-
-		if (theDays != 0 || theHours != 0) {
-
-			s.append(theHours).append("h");
-			inMillis -= (theHours * MILLIS_1_HOUR);
-		}
-
-		final long theMins = inMillis / MILLIS_1_MINUTE;
-
-		if (theDays != 0 || theHours != 0 || theMins != 0) {
-
-			s.append(theMins).append("m");
-			inMillis -= (theMins * MILLIS_1_MINUTE);
-		}
-
-		final long theSecs = inMillis / MILLIS_1_SECOND;
-
-		if (theDays != 0 || theHours != 0 || theMins != 0 || theSecs != 0) {
-
-			s.append(theSecs).append("s");
-			inMillis -= (theSecs * MILLIS_1_SECOND);
-		}
-
-		s.append(inMillis).append("ms");
-
-		return s.toString().trim();
-	}
 
 	public static String toStringDataSize(Long inSize) {
 
@@ -2965,35 +2850,35 @@ public abstract class Utils {
 			return inSize + " bytes";
 		}
 
-		BigDecimal theSize = new BigDecimal(inSize).divide(Utils.BD_1024, 1, RoundingMode.HALF_UP);
+		BigDecimal theSize = new BigDecimal(inSize).divide(de.greyshine.utils.Utils.BD_1024, 1, RoundingMode.HALF_UP);
 
-		if (BD_1024.compareTo(theSize) > 0) {
+		if (de.greyshine.utils.Utils.BD_1024.compareTo(theSize) > 0) {
 
 			return theSize.setScale(2, RoundingMode.HALF_UP).toPlainString() + " KB";
 		}
 
-		theSize = theSize.divide(Utils.BD_1024, 10, RoundingMode.HALF_UP);
+		theSize = theSize.divide(de.greyshine.utils.Utils.BD_1024, 10, RoundingMode.HALF_UP);
 
-		if (BD_1024.compareTo(theSize) > 0) {
+		if (de.greyshine.utils.Utils.BD_1024.compareTo(theSize) > 0) {
 
 			return theSize.setScale(2, RoundingMode.HALF_UP).toPlainString() + " MB";
 		}
 
-		theSize = theSize.divide(Utils.BD_1024, 10, RoundingMode.HALF_UP);
+		theSize = theSize.divide(de.greyshine.utils.Utils.BD_1024, 10, RoundingMode.HALF_UP);
 
-		if (BD_1024.compareTo(theSize) > 0) {
+		if (de.greyshine.utils.Utils.BD_1024.compareTo(theSize) > 0) {
 
 			return theSize.setScale(2, RoundingMode.HALF_UP).toPlainString() + " GB";
 		}
 
-		theSize = theSize.divide(Utils.BD_1024, 10, RoundingMode.HALF_UP);
+		theSize = theSize.divide(de.greyshine.utils.Utils.BD_1024, 10, RoundingMode.HALF_UP);
 
-		if (BD_1024.compareTo(theSize) > 0) {
+		if (de.greyshine.utils.Utils.BD_1024.compareTo(theSize) > 0) {
 
 			return theSize.setScale(2, RoundingMode.HALF_UP).toPlainString() + " TB";
 		}
 
-		theSize = theSize.divide(Utils.BD_1024, 10, RoundingMode.HALF_UP);
+		theSize = theSize.divide(de.greyshine.utils.Utils.BD_1024, 10, RoundingMode.HALF_UP);
 
 		return theSize.setScale(2, RoundingMode.HALF_UP).toPlainString() + " PB";
 	}
@@ -3055,7 +2940,7 @@ public abstract class Utils {
 	public static InputStream cacheStream(InputStream inIs) throws IOException {
 
 		if (inIs == null) {
-			return new ByteArrayInputStream(EMPTY_BYTES);
+			return new ByteArrayInputStream(de.greyshine.utils.Utils.EMPTY_BYTES);
 		}
 
 		final ByteArrayOutputStream theBaos = new ByteArrayOutputStream();
@@ -3402,7 +3287,7 @@ public abstract class Utils {
 	public static byte[] toByteArray(InputStream inInputStream) throws IOException {
 
 		if (inInputStream == null) {
-			return EMPTY_BYTES;
+			return de.greyshine.utils.Utils.EMPTY_BYTES;
 		}
 
 		final int blockSize = 1024;
@@ -3751,7 +3636,7 @@ public abstract class Utils {
 	 * @return the target files
 	 * @throws IOException
 	 */
-	public static List<File> copyFiles(File inSrcFile, final File inTargetFile, final boolean inOverwrite)
+	public static List<File> copyFiles(final File inSrcFile, final File inTargetFile, final boolean inOverwrite)
 			throws IOException {
 
 		final List<File> theFiles = new ArrayList<File>();
@@ -3766,24 +3651,41 @@ public abstract class Utils {
 		final Traverser t = new Traverser(true) {
 
 			@Override
-			public boolean handleFile(File inSrcFile) throws Exception {
+			public boolean handleDirStart(File inDir) throws Exception {
+				
+				final File theTargetDir = new File(inTargetFile,
+						inDir.getCanonicalPath().substring(theNamecutLength));
+				
+				theTargetDir.mkdirs();
+				
+				return theTargetDir.exists();
+			}
+
+			@Override
+			public boolean handleFile(File srcFile) throws Exception {
 
 				final File theTargetFile = new File(inTargetFile,
-						inSrcFile.getCanonicalPath().substring(theNamecutLength));
+						srcFile.getCanonicalPath().substring(theNamecutLength));
 
-				copyFile(inSrcFile, theTargetFile, inOverwrite);
+				copyFile(srcFile, theTargetFile, inOverwrite);
 
 				theFiles.add(theTargetFile);
 
 				return true;
 			}
 		};
+		
+		t.travers( inSrcFile , false);
 
 		Utils.throwIOExceptionIfNotNull(t.getException());
 
 		return theFiles;
 	}
 
+	public static long copyFile(File inSrcFile, File inTargetFile) throws IOException {
+		return copyFile( inSrcFile, inTargetFile, true );
+	}
+	
 	public static long copyFile(File inSrcFile, File inTargetFile, boolean inOverwrite) throws IOException {
 
 		if (inSrcFile == null || !inSrcFile.exists()) {
@@ -3943,27 +3845,6 @@ public abstract class Utils {
 		boolean text(String inText, int inIndex) throws Exception;
 
 		boolean match(String inText, int inIndex) throws Exception;
-	}
-
-	public static boolean isParseableDouble(String string) {
-
-		return parseDouble(string) != null;
-	}
-
-	public static Double parseDouble(String inValue) {
-
-		return parseDouble(inValue, null);
-	}
-
-	public static Double parseDouble(String inValue, Double inDefault) {
-
-		try {
-
-			return new BigDecimal(inValue.trim()).doubleValue();
-
-		} catch (final Exception e) {
-			return inDefault;
-		}
 	}
 
 	public static String wrap(String string, Character c) {
@@ -4198,7 +4079,7 @@ public abstract class Utils {
 			return -1;
 		}
 
-		return Integer.parseInt(getHash(inValue, 6, ALPHABET_0to9));
+		return Integer.parseInt(getHash(inValue, 6, de.greyshine.utils.Utils.ALPHABET_0to9));
 	}
 
 	public static String getHash(String inValue, int inLen, String inAlphabet) {
@@ -4349,141 +4230,7 @@ public abstract class Utils {
 		return sb.toString();
 	}
 
-	public static boolean isParseableBoolean(String string) {
 
-		return parseBoolean(string) != null;
-	}
-
-	public static Boolean parseBoolean(String inString) {
-
-		try {
-
-			if ("true".equalsIgnoreCase(inString)) {
-
-				return true;
-
-			} else if ("false".equalsIgnoreCase(inString)) {
-
-				return false;
-			}
-
-		} catch (final Exception e) {
-		}
-
-		return null;
-	}
-
-	public static Boolean parseBoolean(String inString, Boolean inDefault) {
-
-		return defaultIfNull(parseBoolean(inString), inDefault);
-	}
-
-	public static Float parseFloat(String inString) {
-
-		return parseFloat(inString, null);
-	}
-
-	public static Float parseFloat(String inString, Float inDefault) {
-
-		try {
-
-			return new BigDecimal(inString.trim()).floatValue();
-
-		} catch (final Exception e) {
-		}
-
-		return inDefault;
-	}
-
-	public static Long parseLong(String inString) {
-
-		return parseLong(inString, null);
-	}
-
-	public static boolean isParseableLong(String string) {
-
-		return parseLong(string, null) != null;
-	}
-
-	public static Long parseLong(String inString, Long inDefault) {
-
-		try {
-
-			return Long.parseLong(inString.trim());
-
-		} catch (final Exception e) {
-
-		}
-
-		return inDefault;
-	}
-
-	public static boolean isParseableInteger(String string) {
-
-		return parseInteger(string) != null;
-	}
-
-	public static Integer parseInteger(String inString) {
-
-		return parseInteger(inString, null);
-	}
-
-	public static Integer parseInteger(String inString, Integer inDefault) {
-
-		try {
-
-			return new BigDecimal(inString.trim()).setScale(0, RoundingMode.DOWN).intValue();
-
-		} catch (final Exception e) {
-
-		}
-
-		return inDefault;
-	}
-
-	public static boolean isParseableBigDecimal(String string) {
-
-		return parseBigDecimal(string) != null;
-	}
-
-	public static BigDecimal parseBigDecimal(String inString) {
-
-		return parseBigDecimal(inString, null);
-	}
-
-	public static BigDecimal parseBigDecimal(String inString, BigDecimal inDefault) {
-
-		try {
-
-			return new BigDecimal(inString);
-
-		} catch (final Exception e) {
-
-			return inDefault;
-		}
-	}
-
-	public static boolean isParseableCharacter(String string) {
-
-		return parseCharacter(string) != null;
-	}
-
-	public static Character parseCharacter(String inString) {
-
-		return parseCharacter(inString, null);
-	}
-
-	public static Character parseCharacter(String inString, Character inDefault) {
-
-		Character c = inDefault;
-
-		if (inString != null && inString.length() == 1) {
-
-			c = inString.charAt(0);
-		}
-
-		return c;
-	}
 
 	public static boolean isOneOf(String inValue, boolean isIgnoreCase, String... inValues) {
 
@@ -4956,7 +4703,7 @@ public abstract class Utils {
 
 		try {
 
-			return isLessEqual(BD_DOUBLE_MAX, inValue) && isLarger(BD_DOUBLE_MIN, inValue);
+			return isLessEqual(de.greyshine.utils.Utils.BD_DOUBLE_MAX, inValue) && isLarger(de.greyshine.utils.Utils.BD_DOUBLE_MIN, inValue);
 
 		} catch (final Exception e) {
 			// swallow
@@ -4969,7 +4716,7 @@ public abstract class Utils {
 
 		try {
 
-			return isLessEqual(BD_FLOAT_MAX, inValue) && isLarger(BD_FLOAT_MIN, inValue);
+			return isLessEqual(de.greyshine.utils.Utils.BD_FLOAT_MAX, inValue) && isLarger(de.greyshine.utils.Utils.BD_FLOAT_MIN, inValue);
 
 		} catch (final Exception e) {
 			// swallow
@@ -5004,17 +4751,6 @@ public abstract class Utils {
 	public static boolean notEquals(Object inO1, Object inO2, boolean isBothNullEqual) {
 
 		return !equals(inO1, inO2, isBothNullEqual);
-	}
-
-	public static long getMillis(int inDays, int inHours, int inMinutes, int inSeconds) {
-
-		return getMillis(inDays, inHours, inMinutes, inSeconds, 0);
-	}
-
-	public static long getMillis(int inDays, int inHours, int inMinutes, int inSeconds, int inMillis) {
-
-		return (inMillis) + (inSeconds * MILLIS_1_SECOND) + (inMinutes * MILLIS_1_MINUTE) + (inHours * MILLIS_1_HOUR)
-				+ (inDays * MILLIS_1_DAY);
 	}
 
 	public static String firstLetterLowerCase(String inString) {

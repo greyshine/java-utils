@@ -92,17 +92,17 @@ public class Configuration {
 
 	public Long getLong(String inKey) {
 
-		return Utils.parseLong(getString(inKey), null);
+		return de.greyshine.utils.Utils.parseLong(getString(inKey), null);
 	}
 
 	public Integer getInteger(String inKey) {
 
-		return Utils.parseInteger(getString(inKey), null);
+		return de.greyshine.utils.Utils.parseInteger(getString(inKey), null);
 	}
 
 	public Boolean getBoolean(String inKey) {
 
-		return Utils.parseBoolean(getString(inKey), null);
+		return de.greyshine.utils.Utils.parseBoolean(getString(inKey), null);
 	}
 
 	public List<String> getKeys() {

@@ -355,7 +355,7 @@ public abstract class GsonUtils {
 	public static abstract class AbstractJsonWritable implements IJsonWritable {
 
 		private boolean isPrettyPrint = false;
-		private Charset charset = Utils.CHARSET_UTF8;
+		private Charset charset = de.greyshine.utils.Utils.CHARSET_UTF8;
 
 		public AbstractJsonWritable() {
 
@@ -391,7 +391,7 @@ public abstract class GsonUtils {
 		}
 
 		public void setCharset(Charset inCharset) {
-			charset = Utils.defaultIfNull(inCharset, Utils.CHARSET_UTF8);
+			charset = Utils.defaultIfNull(inCharset, de.greyshine.utils.Utils.CHARSET_UTF8);
 		}
 
 		@Override

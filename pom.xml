@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.greyshine</groupId>
 	<artifactId>utils</artifactId>
-	<version>0.2-SNAPSHOT</version>
+	<version>0.3-SNAPSHOT</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -110,50 +110,47 @@
 					</includes>
 				</configuration>
 			</plugin>
-			
+
 			<plugin>
 				<!-- http://gleclaire.github.io/findbugs-maven-plugin/usage.html -->
-		    	<groupId>org.codehaus.mojo</groupId>
-		    	<artifactId>findbugs-maven-plugin</artifactId>
-		    	<version>3.0.4</version>
-		     </plugin>
-		     
-		     <plugin>
-		     	<!-- https://github.com/trautonen/coveralls-maven-plugin#readme -->
-			    <groupId>org.eluder.coveralls</groupId>
-			    <artifactId>coveralls-maven-plugin</artifactId>
-			    <version>4.2.0</version>
-			    <!-- 
-			    <configuration>
-			        <repoToken>yourcoverallsprojectrepositorytoken</repoToken>
-			    </configuration>
-			    -->
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>findbugs-maven-plugin</artifactId>
+				<version>3.0.4</version>
 			</plugin>
-		     
-		     <plugin>
-			    <groupId>org.jacoco</groupId>
-			    <artifactId>jacoco-maven-plugin</artifactId>
-			    <version>0.7.8</version>
-			    <configuration>
-	                <excludes>
-	                    <exclude>de/greyshine/tools/*Test.java</exclude>
-	                    <exclude>de/greyshine/tools/*Tests.java</exclude>
-	                    <exclude>de/greyshine/tools/*Tester.java</exclude>
-	                    <exclude>de/greyshine/utils/*Test.java</exclude>
-	                    <exclude>de/greyshine/utils/*Tests.java</exclude>
-	                    <exclude>de/greyshine/utils/*Tester.java</exclude>
-	                </excludes>
+
+			<plugin>
+				<!-- https://github.com/trautonen/coveralls-maven-plugin#readme -->
+				<groupId>org.eluder.coveralls</groupId>
+				<artifactId>coveralls-maven-plugin</artifactId>
+				<version>4.2.0</version>
+				<!-- <configuration> <repoToken>yourcoverallsprojectrepositorytoken</repoToken> 
+					</configuration> -->
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.7.8</version>
+				<configuration>
+					<excludes>
+						<exclude>de/greyshine/tools/*Test.java</exclude>
+						<exclude>de/greyshine/tools/*Tests.java</exclude>
+						<exclude>de/greyshine/tools/*Tester.java</exclude>
+						<exclude>de/greyshine/utils/*Test.java</exclude>
+						<exclude>de/greyshine/utils/*Tests.java</exclude>
+						<exclude>de/greyshine/utils/*Tester.java</exclude>
+					</excludes>
 				</configuration>
-			    <executions>
-			        <execution>
-			            <id>prepare-agent</id>
-			            <goals>
-			                <goal>prepare-agent</goal>
-			            </goals>
-			        </execution>
-			    </executions>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
-			
+
 		</plugins>
 	</build>
 
@@ -199,11 +196,58 @@
 			<artifactId>jackson-core</artifactId>
 			<version>2.8.5</version>
 		</dependency>
-		
+
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.4</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.thymeleaf</groupId>
 			<artifactId>thymeleaf</artifactId>
 			<version>3.0.3.RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>1.16</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers</artifactId>
+			<version>1.16</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>2.0.7</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>3.16</version>
+		</dependency>
+
+
+		<!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.5</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.pdfbox/jempbox -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>jempbox</artifactId>
+			<version>1.8.13</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver -->
@@ -224,12 +268,12 @@
 		</dependency>
 
 	</dependencies>
-	
+
 	<scm>
-        <connection>scm:git:git@github.com:greyshine/utils.git</connection>
-        <developerConnection>scm:git:git@github.com:greyshine/utils.git</developerConnection>
-        <url>https://github.com/greyshine/utils</url>
-        <tag>HEAD</tag>
+		<connection>scm:git:git@github.com:greyshine/utils.git</connection>
+		<developerConnection>scm:git:git@github.com:greyshine/utils.git</developerConnection>
+		<url>https://github.com/greyshine/utils</url>
+		<tag>HEAD</tag>
 	</scm>
 
 </project>

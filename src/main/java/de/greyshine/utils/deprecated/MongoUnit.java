@@ -61,7 +61,7 @@ public class MongoUnit {
 		idx = inPropertiesValue.indexOf(':');
 
 		final String address = idx < 0 ? null : Utils.trimToNull(inPropertiesValue.substring(0, idx));
-		final Integer port = idx < 0 ? null : Utils.parseInteger(inPropertiesValue.substring(idx + 1));
+		final Integer port = idx < 0 ? null : de.greyshine.utils.Utils.parseInteger(inPropertiesValue.substring(idx + 1));
 
 		mongoClient = new MongoClient(Arrays.asList(new ServerAddress(address, port)), theUser == null || thePassword == null ? EMPTY_CREDENTIALS : Arrays.asList(MongoCredential.createPlainCredential(theUser, "$EXTERNAL", thePassword.toCharArray())));
 	}

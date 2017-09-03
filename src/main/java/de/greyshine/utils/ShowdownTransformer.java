@@ -50,24 +50,29 @@ public abstract class ShowdownTransformer {
 		SHOWDOWNJS = theShowdownJs;
 	}
 	
-	private static final ThreadLocal<ScriptEngine> TL_JS_SCRIPTENGINES_SHOWDOWNJS = ThreadLocal.withInitial( ()-> { 
-		
-		try {
+	private static final ThreadLocal<ScriptEngine> TL_JS_SCRIPTENGINES_SHOWDOWNJS = new ThreadLocal<ScriptEngine>() {
+
+		@Override
+		protected ScriptEngine initialValue() {
 			
-			final ScriptEngine theNashorn = new ScriptEngineManager().getEngineByName("nashorn");
-			theNashorn.eval("var console = { log:function(msg){print(msg);} }");
-			theNashorn.eval(SHOWDOWNJS);
-			theNashorn.eval("var theShowdownJsConverter = new showdown.Converter();");
-			theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_tables +"',true);");
-			theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_strikethrough +"',true);");
-			theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_simpleLineBreaks +"',true);");
-			
-			return theNashorn;	
-			
-		} catch (Exception e) {
-			throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
+			try {
+				
+				final ScriptEngine theNashorn = new ScriptEngineManager().getEngineByName("nashorn");
+				theNashorn.eval("var console = { log:function(msg){print(msg);} }");
+				theNashorn.eval(SHOWDOWNJS);
+				theNashorn.eval("var theShowdownJsConverter = new showdown.Converter();");
+				theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_tables +"',true);");
+				theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_strikethrough +"',true);");
+				theNashorn.eval("theShowdownJsConverter.setOption('"+ OPTION_simpleLineBreaks +"',true);");
+				
+				return theNashorn;	
+				
+			} catch (Exception e) {
+				throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
+			}
 		}
-	} );
+	};
+			
 	
 	private ShowdownTransformer() {}
 	

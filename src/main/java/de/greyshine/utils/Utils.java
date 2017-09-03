@@ -20,14 +20,19 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
@@ -36,6 +41,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +50,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,6 +61,9 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -61,11 +71,15 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import de.greyshine.utils.deprecated.IFileTraverser.Traverser;
+
 public abstract class Utils {
+
+	private static final Log LOG = LogFactory.getLog(Utils.class);
 	
 	public static final File BASEDIR = getCanonicalFile(new File("."), false); 
 	public static final String BASEPATH = BASEDIR.getAbsolutePath(); 
-	public static final String BASEURL = executeQuietly( new IExecuter<String>() {
+	public static final String BASEURL = execute( new IExecuter<String>() {
 		public String run() { 
 			try {
 				return new File( BASEPATH ).toURI().toURL().toString();
@@ -98,6 +112,9 @@ public abstract class Utils {
 	public static final Charset CHARSET_UTF8 = Charset.forName("UTF-8");
 	public static final Charset CHARSET_ISO_8859_1 = Charset.forName("ISO-8859-1");
 
+	public static final BigInteger BI_2 = new BigInteger("2");
+	public static final BigInteger BI_3 = new BigInteger("3");
+	
 	public static final BigDecimal BD_1024 = new BigDecimal("1024");
 	public static final BigDecimal BD_360 = new BigDecimal("360");
 	public static final BigDecimal BD_180 = new BigDecimal("180");
@@ -651,7 +668,11 @@ public abstract class Utils {
 		URL theIs = null;
 		
 		try {
-			theIs = Thread.currentThread().getContextClassLoader().getResource( inResource );
+			
+			String theResource = inResource;
+			theResource = theResource != null && theResource.length() > 0 && theResource.charAt( 0 ) == '/' ? theResource.substring(1) : theResource;
+			theIs = Thread.currentThread().getContextClassLoader().getResource( theResource );
+
 		} catch (Exception e) {
 			// swallow
 		}
@@ -679,6 +700,20 @@ public abstract class Utils {
 		try (InputStream is = getResource(inResource)) {
 			return readToString( is , inCharset);
 		} 
+	}
+
+	public static String getResourceAsStringSafe(String inResource, Charset inCharset, String inDefault) {
+		
+		try {
+		
+			try (InputStream is = getResource(inResource)) {
+				return readToString( is , inCharset);
+			}
+			
+		} catch (Exception e) {
+			// swallow
+			return inDefault;
+		}
 	}
 	
 	
@@ -840,6 +875,76 @@ public abstract class Utils {
 
 	public static File getCanonicalFile(String inPath, boolean inThrowRuntimeException) {
 		return isBlank( inPath ) ? null : getCanonicalFile( new File( inPath ), inThrowRuntimeException );
+	}
+	
+	public static boolean isCanonicalPathLocation(File inBaseDir, File inFileToCheck) {
+	
+		if ( inBaseDir == null || inBaseDir.isFile() || inFileToCheck == null ) {
+			return false;
+		}
+		
+		try {
+			
+			final String theBaseDir = inBaseDir.getCanonicalPath();
+			final String theCheckFile = inFileToCheck.getCanonicalPath();
+			
+			return theCheckFile.startsWith( theBaseDir );
+			
+		} catch (IOException e) {
+			// swallow
+			return false;
+		}
+	}
+	
+	public static LocalDateTime getFileCreated(String inId) {
+
+		final File f = inId == null ? null : new File(inId);
+		if ( f == null || f.exists() ) { return null; }
+		
+		try {
+
+			final BasicFileAttributes attr = Files.readAttributes(f.toPath(), BasicFileAttributes.class);
+			final FileTime time = attr.creationTime();
+			return LocalDateTime.ofInstant(time.toInstant(), ZoneId.systemDefault());
+
+		} catch (IOException e) {
+
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static LocalDateTime getFileUpdated(String inId) {
+		
+		final File f = inId == null ? null : new File(inId);
+		if ( f == null || f.exists() ) { return null; }
+		
+		try {
+
+			final BasicFileAttributes attr = Files.readAttributes(f.toPath(), BasicFileAttributes.class);
+			final FileTime time = attr.lastModifiedTime();
+			return LocalDateTime.ofInstant(time.toInstant(), ZoneId.systemDefault());
+
+		} catch (IOException e) {
+
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static LocalDateTime getFileLastAccessed(String inId) {
+		
+		final File f = inId == null ? null : new File(inId);
+		if ( f == null || f.exists() ) { return null; }
+		
+		try {
+			
+			final BasicFileAttributes attr = Files.readAttributes(f.toPath(), BasicFileAttributes.class);
+			final FileTime time = attr.lastAccessTime();
+			return LocalDateTime.ofInstant(time.toInstant(), ZoneId.systemDefault());
+			
+		} catch (IOException e) {
+			
+			throw new RuntimeException(e);
+		}
 	}
 	
 	/**
@@ -1133,6 +1238,16 @@ public abstract class Utils {
 	public static String readFileToString(File inFile, Charset inCharset) throws IOException {
 		return readToString(inFile, inCharset);
 	}
+	
+	public static Integer readFileToInteger( File inFile, Integer inDefault ) throws IOException {
+		
+		if ( !Utils.isFile(inFile) ) { return inDefault; }
+		
+		final String theText = readFileToString(inFile, null);
+		
+		return Utils.parseInteger(theText, inDefault);
+	}
+	
 	public static String readToString(File inFile, Charset inCharset) throws IOException {
 		
 		if ( !isFile(inFile) ) { return null; }
@@ -1140,6 +1255,35 @@ public abstract class Utils {
 		try(FileInputStream fis = new FileInputStream( inFile )) {
 			return readToString( fis, inCharset);
 		}
+	}
+	
+	public static Properties loadProperties(File inFile) throws IOException {
+		
+		final Properties p = new Properties();
+		
+		try( InputStream theIs = new FileInputStream( inFile ) ) {
+			
+			p.load( theIs );
+		}
+		
+		return p;
+	}
+	
+	public static Properties loadProperties(String inResource) throws IOException {
+		
+		final InputStream theIs = getResource(inResource);
+		
+		if ( theIs == null ) { return null; }
+		
+		final Properties p = new Properties();
+		
+		try {
+			p.load( theIs );
+		} finally {
+			close( theIs );
+		}
+		
+		return p;
 	}
 	
 	/**
@@ -1279,17 +1423,24 @@ public abstract class Utils {
 	 */
 	public static List<File> listFiles(File inDir, boolean inTraversSubDirectories) {
 
+		return listFiles(inDir, inTraversSubDirectories, (file)->{return true;});
+	}
+	
+	public static List<File> listFiles(File inDir, Object inTraversSubDirectories, Function<File,Boolean> inFilter) {
+		
 		if (inDir == null || !inDir.isDirectory()) {
 
 			return new ArrayList<File>(0);
 
 		}
+		
+		inFilter = defaultIfNull( inFilter , (file)->{return true;} );
 
 		final List<File> theFiles = new ArrayList<File>(0);
 
 		for (final File aFile : defaultIfNull(inDir.listFiles(), EMPTY_FILES)) {
 
-			if (aFile.isFile()) {
+			if (aFile.isFile() && Boolean.TRUE.equals( inFilter.apply( aFile ) ) ) {
 
 				theFiles.add(aFile);
 			}
@@ -1298,6 +1449,7 @@ public abstract class Utils {
 		Collections.sort(theFiles, FILE_COMPARATOR);
 
 		return theFiles;
+		
 	}
 
 	/**
@@ -1378,12 +1530,138 @@ public abstract class Utils {
 		return count;
 	}
 	
-	public static void copy(InputStream inInputStream, File inTargetFile, boolean inCloseInputStream) throws IOException {
-		copy( inInputStream, new FileOutputStream( inTargetFile ), inCloseInputStream, true );
+	public static long copy(InputStream inInputStream, File inTargetFile, boolean inCloseInputStream) throws IOException {
+		return copy( inInputStream, new FileOutputStream( inTargetFile ), inCloseInputStream, true );
 	}
 	
-	public static void copy(InputStream inInputStream, File inTargetFile) throws IOException {
-		copy( inInputStream, inTargetFile, true ); 
+	public static long copy(InputStream inInputStream, File inTargetFile) throws IOException {
+		return copy( inInputStream, inTargetFile, true ); 
+	}
+	
+	public static long copy(File inSourceFile, File inTargetFile) throws IOException {
+		
+		if ( isNoFile( inSourceFile ) ) {
+			return -1;
+		}
+		
+		return copy( new FileInputStream( inSourceFile ), new FileOutputStream( inTargetFile ), true, true );
+	}
+	
+	public static long copyFile(File inSrcFile, File inTargetFile) throws IOException {
+		return copyFile( inSrcFile, inTargetFile, true );
+	}
+	
+	public static long copyFile(File inSrcFile, File inTargetFile, boolean inOverwrite) throws IOException {
+
+		if (inSrcFile == null || !inSrcFile.exists()) {
+
+			return 0;
+
+		} else if (!inSrcFile.isFile()) {
+
+			long theSize = 0;
+
+			for (final File aFile : copyFiles(inSrcFile, inTargetFile, inOverwrite)) {
+
+				theSize += aFile.length();
+			}
+
+			return theSize;
+
+		} else if (inTargetFile == null) {
+
+			throw new IOException("Target file is not specified: " + inSrcFile);
+		}
+
+		inTargetFile = inTargetFile.isDirectory() ? new File(inTargetFile, inSrcFile.getName()) : inTargetFile;
+
+		inTargetFile.getParentFile().mkdirs();
+
+		if (!inTargetFile.getParentFile().isDirectory()) {
+
+			throw new IOException("Target directory is not accessible: " + inTargetFile.getParent());
+
+		} else if (inTargetFile.exists() && !inOverwrite) {
+
+			throw new IOException("Target file exists: " + inTargetFile);
+		}
+
+		FileInputStream theFis = null;
+		FileOutputStream theFos = null;
+
+		long theBytes = 0;
+
+		try {
+
+			theBytes = copy(theFis = new FileInputStream(inSrcFile), theFos = new FileOutputStream(inTargetFile));
+
+			if (LOG.isDebugEnabled()) {
+
+				LOG.debug("copy: " + getCanonicalFile(inSrcFile, true) + " > "
+						+ getCanonicalFile(inTargetFile, true) + "; " + formatDataSize(theBytes));
+			}
+
+			return theBytes;
+
+		} finally {
+
+			close(theFis, theFos);
+		}
+	}
+	
+	/**
+	 * @param inSrcFile
+	 * @param inTargetFile
+	 * @param inOverwrite
+	 * @return the target files
+	 * @throws IOException
+	 */
+	public static List<File> copyFiles(final File inSrcFile, final File inTargetFile, final boolean inOverwrite)
+			throws IOException {
+
+		final List<File> theFiles = new ArrayList<File>();
+
+		if (inSrcFile == null || !inSrcFile.exists()) {
+
+			return theFiles;
+		}
+
+		final int theNamecutLength = inSrcFile.getCanonicalPath().length();
+
+		final Traverser t = new Traverser(true) {
+
+			@Override
+			public boolean handleDirStart(File inDir) throws Exception {
+				
+				final File theTargetDir = new File(inTargetFile,
+						inDir.getCanonicalPath().substring(theNamecutLength));
+				
+				theTargetDir.mkdirs();
+				
+				return theTargetDir.exists();
+			}
+
+			@Override
+			public boolean handleFile(File srcFile) throws Exception {
+
+				final File theTargetFile = new File(inTargetFile,
+						srcFile.getCanonicalPath().substring(theNamecutLength));
+
+				copyFile(srcFile, theTargetFile, inOverwrite);
+
+				theFiles.add(theTargetFile);
+
+				return true;
+			}
+		};
+		
+		t.travers( inSrcFile , false);
+
+		if ( t.getException() != null ) {
+			throw t.getException() instanceof IOException ? (IOException)t.getException() : new IOException( t.getException() );
+		}
+		
+		return theFiles;
 	}
 	
 	// --------------------------
@@ -1593,10 +1871,31 @@ public abstract class Utils {
 			return new BigDecimal(inString.trim()).setScale(0, RoundingMode.DOWN).intValue();
 
 		} catch (final Exception e) {
-
+			// swallow
 		}
 
 		return inDefault;
+	}
+	
+	public static boolean isParseableDouble(String string) {
+
+		return parseDouble(string) != null;
+	}
+
+	public static Double parseDouble(String inValue) {
+
+		return parseDouble(inValue, null);
+	}
+
+	public static Double parseDouble(String inValue, Double inDefault) {
+
+		try {
+
+			return new BigDecimal(inValue.trim()).doubleValue();
+
+		} catch (final Exception e) {
+			return inDefault;
+		}
 	}
 
 	public static boolean isParseableBigDecimal(String string) {
@@ -1685,6 +1984,10 @@ public abstract class Utils {
 	
 	public static byte[] toBytes(InputStream inInputStream) throws IOException {
 		return toBytes(inInputStream, true);
+	}
+	
+	public static byte[] toByteArray(InputStream inInputStream) throws IOException {
+		return toBytes(inInputStream);
 	}
 	
 	public static byte[] toBytes(InputStream inInputStream, boolean inCloseInputStream) throws IOException {
@@ -1977,7 +2280,7 @@ public abstract class Utils {
 		return inValue == null ? null : getSha1(new ByteArrayInputStream(inValue.getBytes()));
 	}
 
-	public static String getSha1(File inFile) throws IOException {
+	public static String getSha1(File inFile) {
 
 		if (inFile == null) {
 
@@ -1988,15 +2291,14 @@ public abstract class Utils {
 			throw new IllegalArgumentException("file is no file: " + inFile);
 		}
 
-		final InputStream theIs = new FileInputStream(inFile);
 
-		try {
+		try (InputStream theIs = new FileInputStream(inFile)) {
 
 			return getSha1(theIs);
-
-		} finally {
-
-			close(theIs);
+			
+		} catch (IOException e) {
+			
+			throw toRuntimeException( e );
 		}
 	}
 
@@ -2017,7 +2319,7 @@ public abstract class Utils {
 		return inValue == null ? null : getSha256(new ByteArrayInputStream(inValue.getBytes()));
 	}
 	
-	public static String getSha256(File inFile) throws IOException {
+	public static String getSha256(File inFile) {
 		
 		if (inFile == null) {
 			
@@ -2028,15 +2330,13 @@ public abstract class Utils {
 			throw new IllegalArgumentException("file is no file: " + inFile);
 		}
 		
-		final InputStream theIs = new FileInputStream(inFile);
 		
-		try {
+		try ( final InputStream theIs = new FileInputStream(inFile) ) {
 			
 			return getSha256(theIs);
 			
-		} finally {
-			
-			close(theIs);
+		} catch (Exception e) {
+			throw toRuntimeException(e);
 		}
 	}
 	
@@ -2220,8 +2520,6 @@ public abstract class Utils {
 		return toBase64(resourceAsStream, false);
 	}
 	
-	
-	
 	// --------
 	// REGEX
 	// --------
@@ -2358,6 +2656,11 @@ public abstract class Utils {
 		return inValue != null && BigDecimal.ZERO.compareTo(inValue) == 0;
 	}
 
+	public static boolean isNotZero(BigDecimal inValue) {
+		
+		return inValue == null || BigDecimal.ZERO.compareTo(inValue) != 0;
+	}
+
 	public static boolean isLarger(BigDecimal inBase, BigDecimal inCompare) {
 
 		return inBase != null && inCompare != null && inBase.compareTo(inCompare) < 0;
@@ -2376,6 +2679,31 @@ public abstract class Utils {
 	public static boolean isLessEqual(BigDecimal inBase, BigDecimal inCompare) {
 
 		return inBase != null && inCompare != null && inBase.compareTo(inCompare) >= 0;
+	}
+	
+	public static boolean isPrimeNumber(BigDecimal inBd) {
+		
+		if ( inBd == null || isNotZero( inBd.remainder( BigDecimal.ONE ) ) ) { return false; }
+		
+		return isPrimeNumber( inBd.toBigInteger() );
+	}
+
+	public static boolean isPrimeNumber(BigInteger inBi) {
+		
+		if ( inBi == null ) { return false; }
+		
+		if (!inBi.isProbablePrime(5))
+	        return false;
+
+		if (!BI_2.equals(inBi) && BigInteger.ZERO.equals(inBi.mod(BI_2)))
+	        return false;
+
+	    for (BigInteger i = BI_3; i.multiply(i).compareTo(inBi) < 1; i = i.add(BI_2)) {
+	        if (BigInteger.ZERO.equals(inBi.mod(i)))
+	            return false;
+	    }
+	    return true;
+		
 	}
 	
 	// --------------------------------------
@@ -2551,6 +2879,18 @@ public abstract class Utils {
 		}
 	}
 	
+	public static LocalDateTime millisToLocalDateTime(Long inMillis) {
+		return millisToLocalDateTime(inMillis, ZoneId.systemDefault());
+	}
+	
+	public static LocalDateTime millisToLocalDateTime(Long inMillis, ZoneId inZoneId) {
+		
+		if ( inMillis == null ) { inMillis = System.currentTimeMillis(); }
+		if ( inZoneId == null ) { inZoneId = ZoneId.systemDefault(); }
+		
+		return LocalDateTime.ofInstant( new Date( inMillis ).toInstant(), inZoneId); 
+	}
+	
 	
 	public static String formatDate(String inPattern, LocalDateTime inTime) {
 		return formatDate( inPattern, Locale.getDefault(), inTime );
@@ -2576,6 +2916,8 @@ public abstract class Utils {
 	public static LocalDateTime parseDate(String inPattern, String inDate) {
 		return LocalDateTime.parse( inDate , new DateTimeFormatterBuilder().appendPattern( inPattern ).toFormatter());
 	}
+	
+
 	
 	// ---------------
 	// Thread releated
@@ -2669,6 +3011,10 @@ public abstract class Utils {
  		 
  	}
 	
+ 	/**
+ 	 * Handler which always a scoped execution which allows throwing any Exception and offers handling of the exception
+ 	 * @param <T>
+ 	 */
 	public interface IExecuter<T> {
 		T run() throws Exception;
 		/**
@@ -2678,14 +3024,20 @@ public abstract class Utils {
 		 * @param inThrowable the {@link Exception} previously thrown by the run method
 		 * @return if not <tt>null</tt> the result value will be rethrown as a {@link RuntimeException}
 		 */
-		default RuntimeException handleException(Throwable inThrowable) { return null; };
+		default RuntimeException handleException(Throwable inThrowable) { return toRuntimeException( inThrowable ); };
 	}
 	
-	public static <T> T executeQuietly(IExecuter<T> inExecution) {
-		return executeQuietly((IExecuter<T>)inExecution, (T)null);
+	public static <T> T execute(IExecuter<T> inExecution) {
+		return execute((IExecuter<T>)inExecution, (T)null);
 	}
 	
-	public static <T> T executeQuietly(IExecuter<T> inExecution, T inDefaultResult) {
+	/**
+	 * 
+	 * @param inExecution
+	 * @param inDefaultResult
+	 * @return
+	 */
+	public static <T> T execute(IExecuter<T> inExecution, T inDefaultResult) {
 		
 		if ( inExecution == null ) {
 			return inDefaultResult;
@@ -2717,35 +3069,19 @@ public abstract class Utils {
 	// stuff
 	// --------------------
 	
-	public static long evaluateMemoryUsages(Object... inObjects) {
-		long theResult = 0;
-		if (inObjects != null) {
-			for (final Object o : inObjects) {
-				theResult += evaluateMemoryUsage(o);
-			}
-		}
-		return theResult;
+	public static long getMemoryUsage(Object... inObjects) {
+		return evaluateMemoryUsage(inObjects);
 	}
 	
-	public static long evaluateMemoryUsages(Collection<?> inObjects) {
-		long theResult = 0;
-		if (inObjects != null) {
-			for (final Object o : inObjects) {
-				theResult += evaluateMemoryUsage(o);
-			}
-		}
-		return theResult;
-	}
-
 	/**
 	 * http://www.javamex.com/tutorials/memory/object_memory_usage.shtml
 	 * 
 	 * @param inObject
 	 * @return
 	 */
-	public static long evaluateMemoryUsage(Object inObject) {
+	public static long evaluateMemoryUsage(Object... inObjects) {
 
-		if (inObject == null) {
+		if (inObjects == null || inObjects.length < 1) {
 			return 0L;
 		}
 
@@ -2753,8 +3089,13 @@ public abstract class Utils {
 		final Wrapper<Long> theCurrentObjectSize = new Wrapper<Long>(0L);
 		final Set<Object> scannedObjects = new HashSet<Object>();
 		final List<Object> theQueue = new ArrayList<Object>();
-		theQueue.add(inObject);
-
+		
+		for(Object anObject : inObjects) {
+			if ( anObject != null ) {
+				theQueue.add( anObject );
+			}
+		}
+		
 		while (!theQueue.isEmpty()) {
 
 			final Object theObject = theQueue.remove(0);
@@ -2790,6 +3131,7 @@ public abstract class Utils {
 				theCurrentObjectSize.value += 4;
 
 				final int len = Array.getLength(theObject);
+				
 				for (int i = 0; i < len; i++) {
 
 					final Object anArrayObject = Array.get(theObject, i);
@@ -2802,7 +3144,7 @@ public abstract class Utils {
 						}
 
 					} catch (final Throwable e) {
-						// TODO: handle exception
+						// swallow
 					}
 				}
 
@@ -2966,5 +3308,134 @@ public abstract class Utils {
 		
 		return sb.toString();
 	}
+
+	public static String encrypt(String inValue, final String inPassword) {
+		
+		if ( inValue == null || inPassword == null || inPassword.isEmpty() ) { return inValue; }
+		
+		final StringBuilder theResult = new StringBuilder();
+		
+		try {
+			encrypt(inPassword, new ByteArrayInputStream( inValue.getBytes( CHARSET_UTF8 ) ) , new OutputStream() {
+				@Override
+				public void write(int b) throws IOException {
+					if ( b < 16 ) { theResult.append( '0' ); }
+					theResult.append( Integer.toHexString( b ) );
+				}
+			});
+
+		} catch(IOException e) {
+			throw Utils.toRuntimeException( e );
+		}
+		
+		return theResult.toString();
+	}
 	
+	public static String decrypt(String inValue, String inPassword) {
+		
+		if ( inValue == null || inValue.isEmpty() || inPassword == null || inPassword.isEmpty() ) { return inValue; }
+		
+		if ( isNoMatch(inValue, "([0-9a-fA-F]{2})*") ) {
+			throw new IllegalArgumentException("value is not hex 00-FF");
+		}
+		
+		final ByteArrayOutputStream theResult = new ByteArrayOutputStream();
+		
+		try {
+			
+			encrypt(inPassword, new InputStream() {
+				
+				final int l = inValue.length();
+				int idx = 0;
+				
+				@Override
+				public int available() throws IOException {
+					return (l - idx) / 2;
+				}
+
+				@Override
+				public int read() throws IOException {
+
+					if ( idx >= l ) {
+						throw new IOException("bad read count");
+					}
+					
+					final int r = Integer.parseInt( inValue.substring(idx, idx+2) , 16);
+					
+					idx += 2;
+					
+					return r;
+				}
+				
+			}, theResult );
+			
+			return theResult.toString( CHARSET_UTF8.name() );
+
+		} catch (IOException e) {
+			throw Utils.toRuntimeException( e );
+		}
+		
+	}
+	
+	public static void encrypt( String inPassword, InputStream inDataStream, OutputStream inResultStream) throws IOException {
+		
+		if ( inPassword == null || inPassword.isEmpty() ) {
+			copy(inDataStream, inResultStream);
+			return;
+		}
+		
+		final Iterator<Integer> pwdCharIter = new Iterator<Integer>() {
+
+			private int idx = -1;
+			
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public Integer next() {
+				
+				return (int) inPassword.charAt( ++idx % inPassword.length() );
+			}
+		};
+		
+		int b;
+		
+		while( inDataStream.available() > 0 ) {
+			
+			b = inDataStream.read();
+			
+			b ^= pwdCharIter.next();
+			
+			inResultStream.write( b );
+		}
+
+		inResultStream.flush();
+	}
+
+	public static String readUrlToString(String inUrl) throws IOException {
+		// TODO add timeout
+		try ( InputStream is = new URL( inUrl ).openStream() ) {
+			return readToString(is, CHARSET_UTF8);	
+		} 
+	}
+
+	public static JsonElement readUrlToJson(String inUrl) throws IOException {
+		// TODO add timeout
+		return readJson(new URL( inUrl ).openStream() , true);
+	}
+	
+	public static long getMillis(int inDays, int inHours, int inMinutes, int inSeconds) {
+
+		return getMillis(inDays, inHours, inMinutes, inSeconds, 0);
+	}
+
+	public static long getMillis(int inDays, int inHours, int inMinutes, int inSeconds, int inMillis) {
+
+		return (inMillis) + (inSeconds * de.greyshine.utils.Utils.MILLIS_1_SECOND) + (inMinutes * de.greyshine.utils.Utils.MILLIS_1_MINUTE) + (inHours * de.greyshine.utils.Utils.MILLIS_1_HOUR)
+				+ (inDays * MILLIS_1_DAY);
+	}
+	
+
 }

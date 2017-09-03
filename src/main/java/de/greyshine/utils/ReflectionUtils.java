@@ -21,8 +21,6 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import de.greyshine.utils.deprecated.Utils;
-
 public abstract class ReflectionUtils {
 
 	public final static Log LOG = LogFactory.getLog(ReflectionUtils.class);
@@ -138,6 +136,18 @@ public abstract class ReflectionUtils {
 		}
 	}
 
+	public static <T> T getFieldValueSafe(Field inField, Object inObject) {
+		
+		try {
+			
+			return getFieldValue(inField, inObject);
+		
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			
+			return null;
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T> T getFieldValue(Field inField, Object inObject) throws IllegalArgumentException, IllegalAccessException {
 
@@ -147,8 +157,10 @@ public abstract class ReflectionUtils {
 		}
 
 		try {
+			
+			final T theValue = (T) inField.get(inObject); 
 
-			return (T) inField.get(inObject);
+			return theValue;
 			
 		} finally {
 			if (!isAccessible) {
@@ -165,7 +177,7 @@ public abstract class ReflectionUtils {
 			return (T)getFieldValue(inFieldName, inObject );
 			
 		} catch (Exception e) {
-			// swalloow
+			// intended swallow
 			return null;
 		}
 	}

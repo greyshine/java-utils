@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +25,8 @@ import com.google.gson.stream.JsonWriter;
 import de.greyshine.utils.Utils;
 
 public class JsonPersister {
+	
+	private static final Charset UTF8 = Charset.forName( "UTF-8" );
 	
 	private Gson gson;
 	
@@ -146,11 +150,15 @@ public class JsonPersister {
 			gb.setPrettyPrinting();
 		}
 	};
-	
+
 	public JsonPersister() {
 		this( DEFAULT_GSON_BUILDING );
 	}
 
+	/**
+	 * 
+	 * @param inGsonBulding {@link Consumer} for configuring the GsonBuilder
+	 */
 	public JsonPersister( Consumer<GsonBuilder> inGsonBulding ) {
 		
 		inGsonBulding = inGsonBulding == null ? DEFAULT_GSON_BUILDING : inGsonBulding;
@@ -180,15 +188,29 @@ public class JsonPersister {
 	
 	public <T> T read( File inFile, Class<T> inClass ) throws IOException {
 		
-		try (Reader r = new InputStreamReader(new FileInputStream( inFile ), "UTF-8")) {
+		return read( new FileInputStream( inFile ), inClass, true );
+	}
+	
+	public <T> T read(InputStream inIs, Class<T> inClass, boolean inCloseStream) throws IOException {
+		
+		if ( inIs == null ) { return null; }
+		
+		try (Reader r = new InputStreamReader(inIs, "UTF-8")) {
 			
 			return gson.fromJson( r, inClass);
-			
 		}
+	}
+	
+	public String getJsonString(Object inObject) {
+		return inObject == null ? "null" : gson.toJson( inObject );
+	}
+
+	public byte[] getJsonBytes(Object inObject) {
+		return getJsonString(inObject).getBytes( UTF8 );
 	}
 
 	public String toString(Object inObject) {
-		return inObject == null ? "null" : gson.toJson( inObject );
+		return getJsonString(inObject);
 	}
 	
 }

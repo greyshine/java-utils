@@ -2,8 +2,6 @@ package de.greyshine.utils;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -24,13 +22,15 @@ public class ToString {
 		}
 	};  
 
-	private final static Function<Object, String> TOSTRINGER_DEFAULT = new Function<Object,String>() {
+	private final Function<Object, String> TOSTRINGER_DEFAULT = new Function<Object,String>() {
+		
 		@Override
 		public final String apply(Object t) {
 			
 			if ( t == null ) { return "null"; }
 			else if ( t instanceof String || t.getClass().isPrimitive()
 					|| t instanceof Boolean
+					|| t instanceof Byte
 					|| t instanceof Character
 					|| t instanceof Short
 					|| t instanceof Integer
@@ -49,6 +49,11 @@ public class ToString {
 			s.append( t.getClass().getName() ).append( " [hash=" ).append( t.hashCode() ).append( ']' );
 			return s.toString();
 		}
+		
+		@Override
+		public final String toString() {
+			return ToString.class.getTypeName() +".TOSTRINGER_DEFAULT";
+		}
 	};
 
 	private final Function<Object, String> TOSTRINGER_ARRAY = new Function<Object,String>() {
@@ -58,17 +63,18 @@ public class ToString {
 			
 			if ( t == null || !t.getClass().isArray() ) { return TOSTRINGER_DEFAULT.apply(t); }
 			
-			final StringBuilder s = TL_STRINGBUFFER.get();
+			final StringBuilder s = new StringBuilder();
 			s.setLength( 0 );
 			
 			final int l = Array.getLength( t );
-			s.append( l ).append(":[");
+			s.append( t.getClass().getComponentType().getTypeName() ).append( ':' );
+			s.append( l ).append("[");
 			
 			for(int i=0; i<l; i++) {
 
 				s.append( ToString.this.toString( Array.get(t, i) ) );
 				
-				if ( i+1<l ) {
+				if ( i+1 < l ) {
 					s.append( ", " );
 				}
 			}
@@ -77,7 +83,7 @@ public class ToString {
 		}
 	};
 	
-	public final static Function<Object, String> TOSTRINGER_THROWABLE = new Function<Object,String>() {
+	public final Function<Object, String> TOSTRINGER_THROWABLE = new Function<Object,String>() {
 		@Override
 		public final String apply(Object o) {
 			
@@ -102,7 +108,7 @@ public class ToString {
 		}
 	};
 	
-	public final static Function<Object, String> TOSTRINGER_JSON = new Function<Object,String>() {
+	public final Function<Object, String> TOSTRINGER_JSON = new Function<Object,String>() {
 		
 		private final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 		
@@ -148,6 +154,7 @@ public class ToString {
 		if ( inObject == null ) { return TOSTRINGER_DEFAULT; }
 		
 		final Function<Object,String> theFunction = tostringers.get( inObject.getClass() );
+		
 		if ( theFunction != null ) { return theFunction; }
 		
 		final Wrapper<Function<Object,String>> theResultWrapper = new Wrapper<>(  );
