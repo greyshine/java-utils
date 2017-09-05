@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.greyshine.utils.Utils;
@@ -67,9 +68,8 @@ public class PublicPrivateKeyManager {
 	}
 
 	@Test
+	@Ignore
 	public void test() {
-
-		
 
 		byte[] prk = createPrivateKey();
 		byte[] pbk = createPublicKey(prk);

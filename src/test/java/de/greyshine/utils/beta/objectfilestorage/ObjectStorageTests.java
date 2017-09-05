@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.greyshine.utils.beta.objectfilestorage.Address.EType;
@@ -50,6 +51,7 @@ public class ObjectStorageTests {
 	} 
 
 	@Test
+	@Ignore
 	public void testFilter() throws IOException {
 		
 		User theUser = new User();

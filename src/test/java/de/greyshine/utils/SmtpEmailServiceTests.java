@@ -8,6 +8,7 @@ import java.util.Properties;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.greyshine.utils.Email.EType;
@@ -44,6 +45,7 @@ public class SmtpEmailServiceTests {
 	}
 	
 	@Test
+	@Ignore
 	public void test() throws SendException {
 		
 		if ( skip ) { return; }

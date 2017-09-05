@@ -2,6 +2,7 @@ package de.greyshine.utils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -43,6 +44,29 @@ public abstract class GsonUtils {
 			default:
 				String theValue = in.nextString();
 				return theValue==null||theValue.trim().isEmpty() ? null : LocalDateTime.parse( theValue.trim(), DateTimeFormatter.ISO_DATE_TIME);
+			}
+		}
+	};
+
+	public static final TypeAdapter<LocalDate> TYPEADAPTER_LOCALDATE = new TypeAdapter<LocalDate>() {
+		
+		@Override
+		public void write(JsonWriter out, LocalDate value) throws IOException {
+			if ( value == null ) {
+				out.nullValue();
+			} else {
+				out.value( value.format( DateTimeFormatter.ISO_DATE ) );
+			}
+		}
+		@Override
+		public LocalDate read(JsonReader in) throws IOException {
+			switch (in.peek()) {
+			case NULL:
+				in.nextNull();
+				return null;
+			default:
+				String theValue = in.nextString();
+				return theValue==null||theValue.trim().isEmpty() ? null : LocalDate.parse( theValue.trim(), DateTimeFormatter.ISO_DATE);
 			}
 		}
 	};

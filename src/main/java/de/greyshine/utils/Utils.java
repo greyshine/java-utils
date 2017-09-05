@@ -31,7 +31,9 @@ import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -148,6 +150,10 @@ public abstract class Utils {
 	public static final String ALPHABET_HEX = "0123456789abcdef";
 	public static final String ALPHABET_SMALL = "0123456789abcdefghijklmnopqrstuvwxyz";
 	public static final String ALPHABET_LARGE = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	/**
+	 * https://en.wikipedia.org/wiki/Base58
+	 */
+	public static final String ALPHABET_BASE58 = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
 	
 	public static final Pattern DIACRITICS_AND_FRIENDS = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
 	
@@ -173,13 +179,22 @@ public abstract class Utils {
 	 * http://stackoverflow.com/questions/4448829/regular-expression-for-not-empty
 	 */
 	public final static String REGEX_NOT_EMPTY = ".*\\S.*";
+	
+	
+	public static final String REGEX_DATE_ISO = "[0-9]{4}\\-[012][0-9]\\-[0123][0-9]";
+	public static final String REGEX_TIME_ISO = "[012][0-9]:[0-5][0-9]:[0-5][0-9](\\.[0-9]{3})?";
+	/**
+	 * e.g. 2011-12-03T10:15:30, 2011-12-03T10:15:30.223 
+	 */
+	public final static String REGEX_DATETIME_ISO = REGEX_DATE_ISO +"T"+ REGEX_TIME_ISO;
+	
 	public final static Pattern PATTERN_NOT_EMPTY = Pattern.compile( REGEX_NOT_EMPTY );
 	
 	public static final Comparator<File> FILE_COMPARATOR = new Comparator<File>() {
 
 		@Override
 		public int compare(File f1, File f2) {
-
+			
 			if (f1.isDirectory() && f2.isFile()) {
 
 				return 1;
@@ -2829,7 +2844,7 @@ public abstract class Utils {
 			return t != null;
 		}
 	};
-	
+
 	public static <T> void forEach(T[] inArray, Consumer<T> inConsumer ) {
 		forEach( inArray, inConsumer );
 	}
@@ -2913,11 +2928,27 @@ public abstract class Utils {
 		return theDtf.format( inTime );
 	}
 	
-	public static LocalDateTime parseDate(String inPattern, String inDate) {
-		return LocalDateTime.parse( inDate , new DateTimeFormatterBuilder().appendPattern( inPattern ).toFormatter());
+	/**
+	 * look at https://stackoverflow.com/a/8854858
+	 * 
+	 * @param inPattern
+	 * @param inDate
+	 * @return
+	 */
+	public static LocalDateTime parseLocalDateTime(String inPattern, String inDate) {
+		final DateTimeFormatter f = DateTimeFormatter.ofPattern(inPattern );
+		return LocalDateTime.from(f.parse( inDate ));
+	}
+
+	public static LocalDate parseLocalDate(String inPattern, String inDate) {
+		final DateTimeFormatter f = DateTimeFormatter.ofPattern(inPattern );
+		return LocalDate.from(f.parse( inDate ));
 	}
 	
-
+	public static LocalTime parseLocalTimeDate(String inPattern, String inDate) {
+		final DateTimeFormatter f = DateTimeFormatter.ofPattern(inPattern );
+		return LocalTime.from(f.parse( inDate ));
+	}
 	
 	// ---------------
 	// Thread releated

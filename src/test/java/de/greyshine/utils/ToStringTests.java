@@ -36,13 +36,13 @@ public class ToStringTests {
 		
 		final String[] theStrings = {"One",null,"Three"};
 		System.out.println( theStrings.getClass() );
-		Assert.assertEquals( "3:[One, null, Three]" , Utils.toString( theStrings ) );
+		Assert.assertEquals( "java.lang.String:3[One, null, Three]" , Utils.toString( theStrings ) );
 		
 		final int[] theInts = {1,2,3};
-		Assert.assertEquals( "3:[1, 2, 3]" , Utils.toString( theInts ) );
+		Assert.assertEquals( "int:3[1, 2, 3]" , Utils.toString( theInts ) );
 		
 		final boolean[] theBools = {};
-		Assert.assertEquals( "0:[]" , Utils.toString( theBools ) );
+		Assert.assertEquals( "boolean:0[]" , Utils.toString( theBools ) );
 	}
 	
 	@Test

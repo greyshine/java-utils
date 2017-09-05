@@ -16,8 +16,14 @@ public class RegexTests {
 		
 		regex = "[a-z]*";
 		Assert.assertTrue( Utils.isMatch( text , regex) );
+	}
+	
+	@Test
+	public void testDatetimeIso() {
 		
+		String date = "2011-12-03T10:15:59";
 		
+		Assert.assertTrue( date.matches( Utils.REGEX_DATETIME_ISO ) );
 		
 	}
 

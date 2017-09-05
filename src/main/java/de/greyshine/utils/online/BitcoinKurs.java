@@ -55,7 +55,7 @@ public class BitcoinKurs {
 		final BitcoinKurs bk = new BitcoinKurs();
 		
 		bk.value = new BigDecimal( thePrice );
-		bk.date = Utils.parseDate( "dd.MM.yy HH:mm", theDate );
+		bk.date = Utils.parseLocalDateTime( "dd.MM.yy HH:mm", theDate );
 		
 		return bk;
 	}

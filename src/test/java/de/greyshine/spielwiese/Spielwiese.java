@@ -4,6 +4,10 @@ import java.math.BigDecimal;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Arrays;
 
 import de.greyshine.utils.Utils;
@@ -13,8 +17,16 @@ public class Spielwiese {
 
 	public static void main(String[] args) throws Exception {
 
-		System.out.println(new Ppkp());
-
+		DateTimeFormatter f = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+		LocalDateTime ldt = LocalDateTime.from( f.parse("January 13, 2012") );
+		System.out.println( ldt );
+		System.out.println( ldt.toLocalDate() );
+		System.out.println( ldt.toLocalTime() );
+		
+		LocalDate localDate = LocalDate.from(f.parse("January 13, 2012"));
+		
+		System.out.println( localDate );
+		
 	}
 
 	static class Ppkp {
