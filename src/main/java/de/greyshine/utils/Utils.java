@@ -1001,16 +1001,14 @@ public abstract class Utils {
 				} );
 				
 			}
-			
-			
-			
-			
 		}
 		
 		return !inFile.exists();
 	}
 	
 	/**
+	 * Will return absolute file if not possible to determine the canonical file.
+	 * 
 	 * Same as <code>getCanonicalFile(File inFile, boolean inThrowRuntimeException)</code> but parameter <code>inThrowRuntimeException</code> is set to <code>false</code> 
 	 * @param inFile
 	 * @return
@@ -2531,8 +2529,23 @@ public abstract class Utils {
 		}
 	}
 	
-	public static String toBase64(InputStream resourceAsStream) throws IOException {
-		return toBase64(resourceAsStream, false);
+	public static String toBase64(InputStream inInputStream) throws IOException {
+		return toBase64(inInputStream, false);
+	}
+	
+	public static byte[] toBytesFromBase64(String inBase64String) {
+		
+		if ( inBase64String == null ) { return null; }
+		if ( inBase64String.trim().isEmpty() ) { return EMPTY_BYTES; }
+		
+		return Base64.getDecoder().decode( inBase64String );
+	}
+	
+	public static InputStream toInputStreamFromBase64(String inBase64String) {
+		
+		if ( inBase64String == null ) { return null; }
+		
+		return new ByteArrayInputStream( toBytesFromBase64(inBase64String) );
 	}
 	
 	// --------

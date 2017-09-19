@@ -2,7 +2,6 @@ package de.greyshine.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,5 +20,9 @@ public class Base64Tests {
 		
 		b = Utils.toBase64( new ByteArrayInputStream( s.getBytes("UTF-8") ) );
 		Assert.assertEquals( "SGVsbG8gV29ybGQh" , b);
+		
+		byte[] theBytes = Utils.toBytesFromBase64( b );
+		Assert.assertEquals( s, new String( theBytes, Utils.CHARSET_UTF8 ) );
+		
 	}
 }
