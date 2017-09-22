@@ -373,6 +373,17 @@ public abstract class Utils {
 		return inValue == null || inValue.trim().isEmpty() ? "" : inValue;
 	}
 	
+	/**
+	 * @param inValue
+	 * @param isNullSuccess
+	 * @return if a String is equal to its trimmed version
+	 */
+	public static boolean isTrimmed(String inValue, boolean isNullSuccess) {
+		
+		if ( inValue == null && !isNullSuccess ) { return false; }
+		return inValue == null || inValue.equals( inValue.trim() );
+	}
+	
 	public static String trimToNull(String inValue) {
 		return trimToDefault(inValue, null);
 	}
@@ -3477,6 +3488,6 @@ public abstract class Utils {
 		return (inMillis) + (inSeconds * de.greyshine.utils.Utils.MILLIS_1_SECOND) + (inMinutes * de.greyshine.utils.Utils.MILLIS_1_MINUTE) + (inHours * de.greyshine.utils.Utils.MILLIS_1_HOUR)
 				+ (inDays * MILLIS_1_DAY);
 	}
-	
+
 
 }
