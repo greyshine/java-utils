@@ -59,8 +59,16 @@ public class IXmlHandlerTests {
 		
 		IXmlHandler.execute( Utils.getResource( "src/test/resources/xmltesting/test1.xml" ) , "UTF-8", theXmlHandler);
 		
-		Assert.assertEquals( 279 , sb.toString().replaceAll( "\\s" , "").length() );
-		Assert.assertEquals( "afd7aeda7ad832f74aa1f33bba61f3f2a13de37c3d33a3724a9e6a4f02e448ff" , Utils.getSha256( sb.toString() ) );
+		// local environment and travis-ci treat the strings differently
+		
+		String theExpected = "STARTSEnullmainSEnullsub1SEnullsub2ATT:nullatt1att1val1EE:nullsub2EE:nullsub1SEothersub2SomeTextEE:othersub2SEnullsub2ATT:otherattkeysomevalueSomeSEnullimoreEE:nulliTextSEnullbrEE:nullbrEE:nullsub2SEnullsub3ATT:otherattkeysomevalueLineoneLinetwoLineThreeEE:nullsub3EE:nullmainEND";
+		String theResult = sb.toString().replaceAll( "\\s" , "");
+		
+		System.out.println( "expected: "+ theExpected );
+		System.out.println( "result:   "+ theResult );
+		final boolean isEqual = theExpected.equals( theResult );
+		System.out.println( "equal: "+ isEqual );
+		Assert.assertTrue( isEqual);
 	}
 
 }
