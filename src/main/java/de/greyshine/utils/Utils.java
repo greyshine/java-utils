@@ -1995,12 +1995,8 @@ public abstract class Utils {
 		}
 	}
 	
-	public static byte[] toBytes(File file) throws FileNotFoundException, IOException {
-		return file == null ? null : toBytes( new FileInputStream(file), true );
-	}
-	
 	public static byte[] toBytes(InputStream inInputStream) throws IOException {
-		return inInputStream == null ? null : toBytes(inInputStream, true);
+		return toBytes(inInputStream, true);
 	}
 	
 	public static byte[] toByteArray(InputStream inInputStream) throws IOException {
@@ -2279,12 +2275,6 @@ public abstract class Utils {
 
 		return inValue == null ? null : getMd5(new ByteArrayInputStream(inValue.getBytes()));
 	}
-	
-	
-	public static String getMd5(byte[] in) {
-
-		return in == null ? null : getMd5( new ByteArrayInputStream( in ) );
-	}
 
 	public static String getMd5(InputStream in) {
 
@@ -2476,7 +2466,11 @@ public abstract class Utils {
 			}
 		} );
 		
-		Utils.copy(inIs, os, inCloseStream, true);
+		Utils.copy(inIs, os);
+		
+		if ( inCloseStream ) {
+			close(inIs);
+		}
 		
 		return w.toString();
 	}
@@ -3486,5 +3480,6 @@ public abstract class Utils {
 		return (inMillis) + (inSeconds * de.greyshine.utils.Utils.MILLIS_1_SECOND) + (inMinutes * de.greyshine.utils.Utils.MILLIS_1_MINUTE) + (inHours * de.greyshine.utils.Utils.MILLIS_1_HOUR)
 				+ (inDays * MILLIS_1_DAY);
 	}
+	
 
 }
