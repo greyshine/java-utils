@@ -24,6 +24,7 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -1995,8 +1996,12 @@ public abstract class Utils {
 		}
 	}
 	
+	public static byte[] toBytes(File file) throws FileNotFoundException, IOException {
+		return file == null ? null : toBytes( new FileInputStream(file), true );
+	}
+	
 	public static byte[] toBytes(InputStream inInputStream) throws IOException {
-		return toBytes(inInputStream, true);
+		return inInputStream == null ? null : toBytes(inInputStream, true);
 	}
 	
 	public static byte[] toByteArray(InputStream inInputStream) throws IOException {
@@ -2247,6 +2252,11 @@ public abstract class Utils {
 	// -------------------------
 	// digesting
 	// -------------------------
+	public static String getMd5(byte[] in) {
+
+		return in == null ? null : getMd5( new ByteArrayInputStream( in ) );
+	}
+	
 	public static String getMd5(File inValue) {
 
 		if (inValue == null || !inValue.exists()) {
@@ -2434,15 +2444,11 @@ public abstract class Utils {
 			final int idxHash = i % theChars.length;
 			idxValues = idxValues == inValues.length ? 0 : idxValues;
 
-			// System.out.println("idxValues=" + idxValues);
-			// System.out.println("idxHash=" + idxHash);
-
 			int idxAlphabet = inValues[idxValues] * (i + 1) * 13;
 
 			idxAlphabet *= 1 + i + theChars[idxHash == 0 ? theChars.length - 1 : idxHash - 1];
-
 			idxAlphabet = Math.abs(idxAlphabet) % inAlphabet.length;
-			// System.out.println("idxAlphabet.final=" + idxAlphabet);
+
 			final char theChar = inAlphabet[idxAlphabet];
 
 			theChars[idxHash] = theChar;
@@ -2466,11 +2472,7 @@ public abstract class Utils {
 			}
 		} );
 		
-		Utils.copy(inIs, os);
-		
-		if ( inCloseStream ) {
-			close(inIs);
-		}
+		Utils.copy(inIs, os, inCloseStream, true);
 		
 		return w.toString();
 	}
@@ -2488,11 +2490,7 @@ public abstract class Utils {
 			}
 		} );
 		
-		Utils.copy(inIs, os);
-		
-		if ( inCloseStream ) {
-			close(inIs);
-		}
+		Utils.copy(inIs, os, inCloseStream, true);
 		
 		return new InputStream() {
 			@Override
