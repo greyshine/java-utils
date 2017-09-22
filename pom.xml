@@ -256,7 +256,7 @@
 			<artifactId>mongo-java-driver</artifactId>
 			<version>3.4.0</version>
 			<type>jar</type>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/junit/junit -->
@@ -272,7 +272,6 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
 			<version>2.9.0</version>
-			<scope>test</scope>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
@@ -280,14 +279,12 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<version>2.9.0</version>
-			<scope>test</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
 			<version>2.9.0</version>
-			<scope>test</scope>
 		</dependency>
 
 		<dependency>
