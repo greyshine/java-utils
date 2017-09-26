@@ -60,6 +60,7 @@ public class IXmlHandlerTests {
 		
 		// local environment and travis-ci treat the strings differently
 		
+
 		String theExpected =     "STARTSEnullmainSEnullsub1SEnullsub2ATT:nullatt1att1val1EE:nullsub2EE:nullsub1SEothersub2SomeTextEE:othersub2SEnullsub2ATT:otherattkeysomevalueSomeSEnullimoreEE:nulliTextSEnullbrEE:nullbrEE:nullsub2SEnullsub3ATT:otherattkeysomevalueLineoneLinetwoLineThreeEE:nullsub3EE:nullmainEND";
 		String theTravisResult = "STARTSEnullmainSEnullsub1SEnullsub2ATT:nullatt1att1val1EE:nullsub2EE:nullsub1SEothersub2SomeTextEE:othersub2SEnullsub2ATT:otherattkeysomevalueSomeSEnullimoreEE:nulliTextSEnullbrEE:nullbrEE:nullsub2SEnullsub3ATT:otherattkeysomevalueEE:nullsub3EE:nullmainEND";
 		String theResult = sb.toString().replaceAll( "\\s" , "");
@@ -73,7 +74,7 @@ public class IXmlHandlerTests {
 		
 		// TODO: travis-ci fails, it seems that the CDATA and its new lines are handled differently on different environments.
 		System.err.println( "on travis-ci this fails. TODO: check why." );
-		
+
 		Assert.assertTrue( isEqual);
 	}
 
