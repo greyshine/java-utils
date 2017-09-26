@@ -52,13 +52,14 @@ public class SmtpEmailService extends AbstractEmailService {
 	public static final String PROPERTY_SERVER_STARTTLS = "server.starttls";
 	public static final String PROPERTY_SENDER_NAME = "sender.name";
 	public static final String PROPERTY_SENDER_EMAIL = "sender.email";
-	
+
 	private static final String KEY_FROM_NAME = "mail.smtp.from.name";
 	private static final String KEY_FROM_EMAIL = "mail.smtp.from.email";
 	private static final String KEY_HOST = "mail.smtp.host";
 	private static final String KEY_PORT = "mail.smtp.port";
 	private static final String KEY_USER = "mail.smtp.user";
 	private static final String KEY_PASSWORD = "mail.smtp.password";
+
 	/**
 	 * Takes <code>true</code> or <code>false</code>
 	 */
@@ -69,57 +70,58 @@ public class SmtpEmailService extends AbstractEmailService {
 	public final String KEY_STARTTLS_ENABLE = "mail.smtp.starttls.enable";
 
 	private Properties properties = new Properties();
+	private Object SYNC_EMAIL_SENDING = new Object();
 
 	public SmtpEmailService() {
 		this(true);
 	}
-	
+
 	public SmtpEmailService(boolean inEnableStarttls) {
-		if ( inEnableStarttls ) {
+		if (inEnableStarttls) {
 			enableStarttls();
 		}
 	}
-	
-	public SmtpEmailService( Properties inProperties ) {
-		
-		init( inProperties );
+
+	public SmtpEmailService(Properties inProperties) {
+
+		init(inProperties);
 	}
-	
+
 	public SmtpEmailService init(Properties inProperties) {
-		
-		inProperties = inProperties != null ? inProperties : createProperties(null,null,null,null,null,null,null);
-		
-		setLogin( 
-				Utils.trimToEmpty( inProperties.getProperty( PROPERTY_SERVER_ADDRESS ) ),//
-				Utils.trimToEmpty( inProperties.getProperty( PROPERTY_SERVER_PORT ) ),
-				Utils.trimToEmpty( inProperties.getProperty( PROPERTY_SERVER_LOGIN ) ) ,//
-				Utils.trimToEmpty( inProperties.getProperty( PROPERTY_SERVER_PASSWORD ) )//
-				);
-		
-		setFrom( Utils.trimToEmpty( inProperties.getProperty( PROPERTY_SENDER_NAME ) ),//
-				Utils.trimToEmpty( inProperties.getProperty( PROPERTY_SENDER_EMAIL ) )//
-				);
-		
-		if ( "true".equalsIgnoreCase( inProperties.getProperty( PROPERTY_SERVER_STARTTLS, "false") ) ) {
+
+		inProperties = inProperties != null ? inProperties : createProperties(null, null, null, null, null, null, null);
+
+		setLogin(Utils.trimToEmpty(inProperties.getProperty(PROPERTY_SERVER_ADDRESS)), //
+				Utils.trimToEmpty(inProperties.getProperty(PROPERTY_SERVER_PORT)),
+				Utils.trimToEmpty(inProperties.getProperty(PROPERTY_SERVER_LOGIN)), //
+				Utils.trimToEmpty(inProperties.getProperty(PROPERTY_SERVER_PASSWORD))//
+		);
+
+		setFrom(Utils.trimToEmpty(inProperties.getProperty(PROPERTY_SENDER_NAME)), //
+				Utils.trimToEmpty(inProperties.getProperty(PROPERTY_SENDER_EMAIL))//
+		);
+
+		if ("true".equalsIgnoreCase(inProperties.getProperty(PROPERTY_SERVER_STARTTLS, "false"))) {
 			enableStarttls();
 		}
-		
+
 		return this;
 	}
 
-	public static Properties createProperties(String serverAddress, String serverPort, String serverLogin, String serverPassword, String inUseStarttls, String senderName, String senderEmail) {
-		
+	public static Properties createProperties(String serverAddress, String serverPort, String serverLogin,
+			String serverPassword, String inUseStarttls, String senderName, String senderEmail) {
+
 		final Properties p = new Properties();
-		
-		p.setProperty( PROPERTY_SERVER_ADDRESS ,  Utils.trimToEmpty( serverAddress ) );
-		p.setProperty( PROPERTY_SERVER_LOGIN ,  Utils.trimToEmpty( serverLogin ) );
-		p.setProperty( PROPERTY_SERVER_PASSWORD ,  Utils.trimToEmpty( serverPassword ) );
-		p.setProperty( PROPERTY_SERVER_STARTTLS ,  "true".equalsIgnoreCase( inUseStarttls ) ? "true" : "false" );
-		p.setProperty( PROPERTY_SERVER_PORT ,  String.valueOf( Utils.parseInteger( serverPort , -1) ) );
-		
-		p.setProperty( PROPERTY_SENDER_NAME ,  Utils.trimToEmpty( senderName ) );
-		p.setProperty( PROPERTY_SENDER_EMAIL ,  Utils.trimToEmpty( senderEmail ) );
-		
+
+		p.setProperty(PROPERTY_SERVER_ADDRESS, Utils.trimToEmpty(serverAddress));
+		p.setProperty(PROPERTY_SERVER_LOGIN, Utils.trimToEmpty(serverLogin));
+		p.setProperty(PROPERTY_SERVER_PASSWORD, Utils.trimToEmpty(serverPassword));
+		p.setProperty(PROPERTY_SERVER_STARTTLS, "true".equalsIgnoreCase(inUseStarttls) ? "true" : "false");
+		p.setProperty(PROPERTY_SERVER_PORT, String.valueOf(Utils.parseInteger(serverPort, -1)));
+
+		p.setProperty(PROPERTY_SENDER_NAME, Utils.trimToEmpty(senderName));
+		p.setProperty(PROPERTY_SENDER_EMAIL, Utils.trimToEmpty(senderEmail));
+
 		return p;
 	}
 
@@ -132,6 +134,7 @@ public class SmtpEmailService extends AbstractEmailService {
 	public void setHost(String inHost, int inPort) {
 		setHost(inHost, String.valueOf(inPort));
 	}
+
 	public void setHost(String inHost, String inPort) {
 
 		setProperty(KEY_HOST, inHost);
@@ -146,7 +149,8 @@ public class SmtpEmailService extends AbstractEmailService {
 	 * @param inFromName
 	 * @param inFromEmail
 	 */
-	public void setLogin(String inHost, String inPort, String inUser, String inPassword, String inFromName, String inFromEmail) {
+	public void setLogin(String inHost, String inPort, String inUser, String inPassword, String inFromName,
+			String inFromEmail) {
 
 		setLogin(inHost, inPort, inUser, inPassword);
 		setFrom(inFromName, inFromEmail);
@@ -178,7 +182,7 @@ public class SmtpEmailService extends AbstractEmailService {
 
 	public void setProperty(String inKey, String inValue) {
 
-		switch ( inKey ) {
+		switch (inKey) {
 		case PROPERTY_SERVER_ADDRESS:
 			inKey = KEY_HOST;
 			break;
@@ -195,56 +199,90 @@ public class SmtpEmailService extends AbstractEmailService {
 			inKey = KEY_FROM_NAME;
 			break;
 		}
-		
+
 		properties.put(inKey, inValue);
 	}
 
 	@Override
 	public void send(Email inEmail) throws SendException {
 
+		send(inEmail, 10 * 1000);
+	}
+
+	@Override
+	public void send(Email inEmail, long inMaxMillisToRun) throws SendException {
+
 		if (inEmail == null) {
 
 			return;
 		}
-		
-		try {
-			
-			Authenticator theAuthenticator = null;
 
-			if (properties.get(KEY_AUTH) != null && "true".equalsIgnoreCase(properties.get(KEY_AUTH).toString())) {
+		Exception theException = null;
 
-				theAuthenticator = new Authenticator() {
+		synchronized (SYNC_EMAIL_SENDING) {
 
-					@Override
-					protected PasswordAuthentication getPasswordAuthentication() {
-						return new PasswordAuthentication(properties.getProperty(KEY_USER), properties.getProperty(KEY_PASSWORD));
+			try {
+
+				theException = Utils.executeWithTimeout(() -> {
+
+					try {
+
+						Authenticator theAuthenticator = null;
+
+						if (properties.get(KEY_AUTH) != null
+								&& "true".equalsIgnoreCase(properties.get(KEY_AUTH).toString())) {
+
+							theAuthenticator = new Authenticator() {
+
+								@Override
+								protected PasswordAuthentication getPasswordAuthentication() {
+									return new PasswordAuthentication(properties.getProperty(KEY_USER),
+											properties.getProperty(KEY_PASSWORD));
+								}
+							};
+						}
+
+						final Session theSession = Session.getDefaultInstance(properties, theAuthenticator);
+						final Message theMessage = createJavaxMessage(theSession, inEmail);
+
+						Transport.send(theMessage);
+
+						inEmail.markSend();
+
+					} catch (final Exception e) {
+
+						inEmail.markSend(e);
+
+						return e;
 					}
-				};
+
+					return null;
+
+				}, inMaxMillisToRun);
+
+			} catch (Exception e) {
+
+				theException = e;
 			}
 
-			final Session theSession = Session.getDefaultInstance(properties, theAuthenticator);
-			final Message theMessage = createJavaxMessage(theSession, inEmail);
-			Transport.send(theMessage);
-			inEmail.markSend();
+		}
 
-		} catch (final Exception e) {
-
-			inEmail.markSend(e);
-			
-			throw e instanceof SendException ? (SendException) e : new SendException(e);
+		if (theException != null) {
+			throw theException instanceof SendException ? (SendException) theException
+					: new SendException(theException);
 		}
 	}
-	
+
 	protected Message createJavaxMessage(Session inSession, Email inEmail) throws MessagingException, IOException {
-		
+
 		final MimeMessage theMessage = new MimeMessage(inSession);
-		
+
 		final List<InternetAddress> theFroms = new ArrayList<InternetAddress>(1);
-		
+
 		for (final Email.EmailAddress ea : inEmail.emails) {
 
 			final InternetAddress anAddress = new InternetAddress(ea.email, Utils.trimToNull(ea.name));
-			
+
 			switch (ea.type) {
 
 			case FROM:
@@ -266,42 +304,46 @@ public class SmtpEmailService extends AbstractEmailService {
 
 		if (theFroms.isEmpty() && properties.getProperty(KEY_FROM_EMAIL) != null) {
 
-			theMessage.addFrom(new Address[] { new InternetAddress(properties.getProperty(KEY_FROM_EMAIL), properties.getProperty(KEY_FROM_NAME), "UTF-8") });
+			theMessage.addFrom(new Address[] { new InternetAddress(properties.getProperty(KEY_FROM_EMAIL),
+					properties.getProperty(KEY_FROM_NAME), "UTF-8") });
 
 		} else {
 
 			theMessage.addFrom(theFroms.toArray(new InternetAddress[theFroms.size()]));
 		}
-		
+
 		theMessage.setSubject(Utils.trimToEmpty(inEmail.subject).replaceAll("\n\r", " "));
 
 		boolean isHtml = false;
 		Multipart theMultipart = null;
-		
+
 		if (inEmail.isHtml()) {
-			
-			final String theContentType = "text/html" + ( inEmail.getCharset() == null ? "" : "; charset="+ inEmail.getCharset().name() );
-			
+
+			final String theContentType = "text/html"
+					+ (inEmail.getCharset() == null ? "" : "; charset=" + inEmail.getCharset().name());
+
 			isHtml = true;
-			theMultipart = theMultipart != null ? theMultipart : createMultipart(isHtml, inEmail.isText() ? inEmail.getText() : null);
-			
+			theMultipart = theMultipart != null ? theMultipart
+					: createMultipart(isHtml, inEmail.isText() ? inEmail.getText() : null);
+
 			final MimeBodyPart theMbp = new MimeBodyPart();
-			final String theHtml = Utils.trimToEmpty( inEmail.getHtml() );
-			theMbp.setContent( theHtml , theContentType);
-			theMultipart.addBodyPart( theMbp );
+			final String theHtml = Utils.trimToEmpty(inEmail.getHtml());
+			theMbp.setContent(theHtml, theContentType);
+			theMultipart.addBodyPart(theMbp);
 			theMessage.setContent(Utils.trimToEmpty(inEmail.getHtml()), theContentType);
 		}
 
-		if (inEmail.isText() ) {
-			
-			theMessage.setText(Utils.trimToEmpty(inEmail.getText()), ( inEmail.getCharset() != null ? inEmail.getCharset() : Charset.defaultCharset() ).name() );
+		if (inEmail.isText()) {
+
+			theMessage.setText(Utils.trimToEmpty(inEmail.getText()),
+					(inEmail.getCharset() != null ? inEmail.getCharset() : Charset.defaultCharset()).name());
 		}
 
-		for (
-		final Email.Attachment a : inEmail.attachments) {
+		for (final Email.Attachment a : inEmail.attachments) {
 
-			theMultipart = theMultipart != null ? theMultipart : createMultipart(isHtml, inEmail.isText() ? inEmail.getText() : null);
-			
+			theMultipart = theMultipart != null ? theMultipart
+					: createMultipart(isHtml, inEmail.isText() ? inEmail.getText() : null);
+
 			final MimeBodyPart theMbp = new MimeBodyPart();
 
 			if (a instanceof FileAttachment) {
@@ -312,31 +354,31 @@ public class SmtpEmailService extends AbstractEmailService {
 			} else if (a instanceof BytesAttachment) {
 
 				theMbp.setFileName(a.name);
-				theMbp.setDataHandler(new DataHandler( new DataSource() {
-					
+				theMbp.setDataHandler(new DataHandler(new DataSource() {
+
 					@Override
 					public OutputStream getOutputStream() throws IOException {
 						return Utils.DEV0;
 					}
-					
+
 					@Override
 					public String getName() {
 						return a.name;
 					}
-					
+
 					@Override
 					public InputStream getInputStream() throws IOException {
 						return new ByteArrayInputStream(((BytesAttachment) a).bytes);
 					}
-					
+
 					@Override
 					public String getContentType() {
 						return a.contentType;
 					}
-				}  ));
-			
+				}));
+
 			} else {
-				
+
 				throw new IOException("Unknown handling of attachment/inline element: " + a);
 			}
 
@@ -354,10 +396,10 @@ public class SmtpEmailService extends AbstractEmailService {
 
 			theMultipart.addBodyPart(theMbp);
 		}
-		
-		if ( theMultipart != null ) {
-			
-			theMessage.setContent( theMultipart );
+
+		if (theMultipart != null) {
+
+			theMessage.setContent(theMultipart);
 		}
 
 		return theMessage;
@@ -376,6 +418,4 @@ public class SmtpEmailService extends AbstractEmailService {
 
 		return theMimeMultipart;
 	}
-
 }
-

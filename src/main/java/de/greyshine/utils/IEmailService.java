@@ -27,6 +27,7 @@ public interface IEmailService {
 	void sendHtml(String inFromName, String inFromEmail, String inToName, String inToEmail, String inSubject, String inHtml, String inText) throws SendException;
 
 	void send(Email inEmail) throws SendException;
+	void send(Email inEmail, long inMaxTimeOut) throws SendException;
 	
 	class SendException extends Exception {
 

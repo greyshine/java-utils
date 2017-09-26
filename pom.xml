@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.greyshine</groupId>
 	<artifactId>utils</artifactId>
-	<version>0.3-SNAPSHOT</version>
+	<version>0.0.3-SNAPSHOT</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -12,7 +12,7 @@
 
 	<build>
 
-		<finalName>greyshine-java-utils</finalName>
+		<finalName>greyshine-java-utils-${project.version}</finalName>
 
 		<plugins>
 			<plugin>
@@ -24,66 +24,39 @@
 				</configuration>
 			</plugin>
 
+			<!-- DEPRECATED!!! see https://stackoverflow.com/a/23937311/845117 -->
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<!-- http://stackoverflow.com/a/15799254 -->
 				<version>3.0.0</version>
 				<executions>
+					<!-- <execution> <id>build-publisher-characterscanner</id> <configuration> 
+						<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.CharacterScanner</mainClass> 
+						</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+						</descriptorRefs> <finalName>greyshine.characterscanner-${project.version}</finalName> 
+						</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
+						</execution> <execution> <id>build-publisher-dencoder</id> <configuration> 
+						<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.Dencoder</mainClass> 
+						</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+						</descriptorRefs> <finalName>greyshine.dencoder-${project.version}</finalName> 
+						</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
+						</execution> <execution> <id>build-publisher-trnsfrm</id> <configuration> 
+						<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.Trnsfrm</mainClass> 
+						</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+						</descriptorRefs> <finalName>greyshine.trnsfrm-${project.version}</finalName> 
+						</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
+						</execution> -->
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
 					<execution>
-						<id>build-publisher-characterscanner</id>
-						<configuration>
-							<appendAssemblyId>false</appendAssemblyId>
-							<archive>
-								<manifest>
-									<mainClass>de.greyshine.tools.CharacterScanner</mainClass>
-								</manifest>
-							</archive>
-							<descriptorRefs>
-								<descriptorRef>jar-with-dependencies</descriptorRef>
-							</descriptorRefs>
-							<finalName>greyshine.characterscanner-${project.version}</finalName>
-						</configuration>
-						<phase>package</phase>
+						<id>attach-sources</id>
 						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>build-publisher-dencoder</id>
-						<configuration>
-							<appendAssemblyId>false</appendAssemblyId>
-							<archive>
-								<manifest>
-									<mainClass>de.greyshine.tools.Dencoder</mainClass>
-								</manifest>
-							</archive>
-							<descriptorRefs>
-								<descriptorRef>jar-with-dependencies</descriptorRef>
-							</descriptorRefs>
-							<finalName>greyshine.dencoder-${project.version}</finalName>
-						</configuration>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>build-publisher-trnsfrm</id>
-						<configuration>
-							<appendAssemblyId>false</appendAssemblyId>
-							<archive>
-								<manifest>
-									<mainClass>de.greyshine.tools.Trnsfrm</mainClass>
-								</manifest>
-							</archive>
-							<descriptorRefs>
-								<descriptorRef>jar-with-dependencies</descriptorRef>
-							</descriptorRefs>
-							<finalName>greyshine.trnsfrm-${project.version}</finalName>
-						</configuration>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
+							<goal>jar</goal>
 						</goals>
 					</execution>
 				</executions>

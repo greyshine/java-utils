@@ -55,6 +55,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -113,6 +114,12 @@ public abstract class Utils {
 
 	public static final Charset CHARSET_UTF8 = Charset.forName("UTF-8");
 	public static final Charset CHARSET_ISO_8859_1 = Charset.forName("ISO-8859-1");
+	
+	/**
+	 * Carriage Return and LineFeed
+	 * Remember: [\r]etur[\n] :-) https://stackoverflow.com/a/6539810/845117 
+	 */
+	public static final String CRLF = "\r\n".intern();
 
 	public static final BigInteger BI_2 = new BigInteger("2");
 	public static final BigInteger BI_3 = new BigInteger("3");
@@ -146,14 +153,14 @@ public abstract class Utils {
 	public static final long MEGABYTE_1GB = 1024;
 	public static final long MEGABYTE_1TB = MEGABYTE_1GB * 1024;
 	
-	public static final String ALPHABET_0to9 = "0123456789";
-	public static final String ALPHABET_HEX = "0123456789abcdef";
-	public static final String ALPHABET_SMALL = "0123456789abcdefghijklmnopqrstuvwxyz";
-	public static final String ALPHABET_LARGE = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	public static final String ALPHABET_0to9 = "0123456789".intern();
+	public static final String ALPHABET_HEX = "0123456789abcdef".intern();
+	public static final String ALPHABET_SMALL = "0123456789abcdefghijklmnopqrstuvwxyz".intern();
+	public static final String ALPHABET_LARGE = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".intern();
 	/**
 	 * https://en.wikipedia.org/wiki/Base58
 	 */
-	public static final String ALPHABET_BASE58 = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+	public static final String ALPHABET_BASE58 = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ".intern();
 	
 	public static final Pattern DIACRITICS_AND_FRIENDS = Pattern.compile("[\\p{InCombiningDiacriticalMarks}\\p{IsLm}\\p{IsSk}]+");
 	
@@ -506,6 +513,30 @@ public abstract class Utils {
 		return theLines;
 	}
 	
+	/**
+	 * Tells if a {@link String} startsWith any of the given start sub strings.
+	 * Reduces if clause in the code
+	 * 
+	 * @param inValueToCheck
+	 * @param inTrimString whether to trim the the String before applying checks
+	 * @param inStartSubString
+	 * @return
+	 */
+	public static boolean isStringStartingWithAny(String inValueToCheck, boolean inTrimString, String... inStartSubString) {
+		
+		if ( inValueToCheck == null || inStartSubString == null ) { return false; }
+		
+		inValueToCheck = !inTrimString ? inValueToCheck : inValueToCheck.trim();
+		
+		for( String aStartValue : inStartSubString ) {
+			
+			if ( aStartValue == null ) { continue; }
+			else if ( inValueToCheck.startsWith( aStartValue ) ) { return true; }
+		}
+		
+		return false;
+	}
+	
 	public static RuntimeException toRuntimeException(Throwable e) {
 		return e == null || e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e);
 	}
@@ -549,7 +580,7 @@ public abstract class Utils {
 	
 	
 	public static String requireNotBlank(String inValue) {
-		return requireNotNull(inValue, null);
+		return requireNotNull(inValue, (String)null);
 	}
 	
 	public static String requireNotBlank(String inValue, String inMessage) {
@@ -563,8 +594,9 @@ public abstract class Utils {
 	}
 	
 	public static <T> T requireNotNull(T inValue) {
-		return requireNotNull(inValue, null);
+		return requireNotNull(inValue, (String)null);
 	}
+	
 	public static <T> T requireNotNull(T inValue, String inMessage) {
 		
 		if ( inValue == null ) {
@@ -587,6 +619,40 @@ public abstract class Utils {
 			inMessage = inMessage != null ? inMessage : "not matching [regex="+ inRegex +", value="+ inValue +"]";
 			throw new IllegalArgumentException( inMessage );
 		}
+	}
+	
+	public static void require( boolean inIsOk, String inIllegalArgumentExceptionMessage ) {
+		require(inIsOk, ()->{ return new IllegalArgumentException( inIllegalArgumentExceptionMessage ); } );
+	}
+	
+	public static void require( boolean inIsOk, Supplier<IllegalArgumentException> inIllegalArgumentexceptionBuilder ) {
+		
+		if ( inIsOk) { return; }
+		
+		if ( inIllegalArgumentexceptionBuilder == null ) {
+			inIllegalArgumentexceptionBuilder = ()->{ return new IllegalArgumentException( "Utils.require() failed to pass." ); };
+		}
+		
+		IllegalArgumentException theIae = new IllegalArgumentException( "Utils.require() failed to pass." );
+		
+		try {
+			
+			theIae = inIllegalArgumentexceptionBuilder.get();
+			
+		} catch (Exception e) {
+			// swallow
+			LOG.warn( e );
+		}
+		
+		throw theIae;
+	}
+	
+	public static void requireNotBlank( String inValue, Supplier<IllegalArgumentException> inIllegalArgumentexceptionBuilder ) {
+		require( isNotBlank(inValue) , inIllegalArgumentexceptionBuilder);
+	}
+	
+	public static void requireNotNull( Object inValue, Supplier<IllegalArgumentException> inIllegalArgumentexceptionBuilder ) {
+		require( inValue != null , inIllegalArgumentexceptionBuilder);
 	}
 	
 	public static <T> Wrapper<T> wrapper(T inValue) {
@@ -3027,6 +3093,195 @@ public abstract class Utils {
 		}
 	}
 
+	/**
+	 * Executes without ever throwing an {@link Exception} but instead return the default value.
+	 * @param inSupplier
+	 * @param inDefault
+	 * @return
+	 */
+	public static <T> T executeQuietly( Supplier<T> inSupplier, T inDefault ) {
+		
+		try {
+
+			return inSupplier.get();
+			
+		} catch (Exception e) {
+			// swallow
+			return inDefault;
+		}
+	}
+	
+	private static TimeoutGuard TIMEOUTGUARD = new TimeoutGuard();
+	
+	private static class TimeoutGuard extends Thread {
+		
+		final Map<Thread,Long> timeouts = new HashMap<>();
+		
+		public TimeoutGuard() {
+			setName( getClass().getTypeName() );
+			super.start();
+		}
+
+		@Override
+		public void run() {
+			
+			Wrapper<Long> theAllNextWaitTime = new Wrapper<>();
+			
+			while( true ) {
+				
+				synchronized ( timeouts ) {
+					
+					// init with defaul wait(...)
+					theAllNextWaitTime.value=1700L;
+					
+					timeouts.forEach( (thread, maxLiveTime )->{
+						
+						final long theThreadNextWaitTime = maxLiveTime - System.currentTimeMillis();
+						
+						if ( theThreadNextWaitTime <= 0 ) {
+							
+							unregister( thread );
+							thread.interrupt();
+							
+						} else {
+							
+							theAllNextWaitTime.value = Math.min( theAllNextWaitTime.value, theThreadNextWaitTime);
+						}
+						
+						try {
+							
+							timeouts.wait( theAllNextWaitTime.value < 1 ? 100 : theAllNextWaitTime.value );
+						
+						} catch (InterruptedException e) {
+							
+							// swallow
+							e.printStackTrace();
+						}
+
+					} );
+				}
+			}
+		}
+		
+		public void register( long inMillisToLive, Thread t ) {
+			synchronized ( timeouts ) {
+				timeouts.put(t , System.currentTimeMillis() + inMillisToLive);
+			}
+		}
+
+		public void unregister( Thread t ) {
+			synchronized ( timeouts ) {
+				timeouts.remove(t);
+			}
+		}
+	}
+	
+	/**
+	 * @deprecated interrupting does not properly work since the supplier's execution / or its delegation does not check for interrupted thread state.
+	 * @param inSupplier
+	 * @param inMaxMillisToRun
+	 * @return
+	 * @throws TimeoutException when the timeout occured
+	 * @throws Exception
+	 */
+	public static <T> T _executeWithTimeout(Supplier<T> inSupplier, long inMaxMillisToRun) throws TimeoutException, Exception {
+		
+		if ( inSupplier == null ) { throw new IllegalArgumentException( "supplier is null" ); }
+		else if ( inMaxMillisToRun < 1 ) {
+			return inSupplier.get();
+		}
+		
+		try {
+			
+			TIMEOUTGUARD.register( inMaxMillisToRun, Thread.currentThread() );
+			
+			return inSupplier.get(); 
+			
+		} finally {
+			
+			TIMEOUTGUARD.unregister( Thread.currentThread() );
+		}
+	}
+	
+	
+	/**
+	 * @param inSupplier
+	 * @param inMaxMillisToRun
+	 * @return
+	 * @throws TimeoutException when a timeout happened
+	 * @throws Exception when supplier threw an {@link Exception}
+	 */
+	public static <T> T executeWithTimeout(Supplier<T> inSupplier, long inMaxMillisToRun) throws TimeoutException, Exception {
+		
+		if ( inSupplier == null ) { throw new IllegalArgumentException( "supplier is null" ); }
+		else if ( inMaxMillisToRun < 1 ) {
+			return inSupplier.get();
+		}
+		
+		final long theTimeout = System.currentTimeMillis() + inMaxMillisToRun;
+		
+		class Runner extends Thread {
+		
+			T result = null;
+			Exception exception = null;
+			boolean isDone = false;
+			
+			public Runner() {
+				super( String.valueOf( inSupplier ) );
+				setDaemon(false);
+				start();
+			}
+			
+			@Override
+			public void run() {
+				
+				try {
+					
+					result = inSupplier.get();
+					isDone = true;
+
+				} catch (Exception e) {
+
+					isDone = true;
+					exception = e;
+				}
+				
+				synchronized ( this ) {
+					notifyAll();
+				}
+			}
+		}
+		
+		final Runner theRunner = new Runner();
+		
+		while( !theRunner.isDone && System.currentTimeMillis() < theTimeout ) {
+			
+			synchronized ( theRunner ) {
+				
+				try {
+				
+					theRunner.wait( 900 );
+				
+				} catch (InterruptedException e) {
+					// swallow
+				}
+			}
+		}
+		
+		if ( !theRunner.isDone ) {
+			
+			theRunner.interrupt();
+			
+			throw new TimeoutException( inSupplier.toString() +" [timeout="+ theTimeout +", ttl="+ inMaxMillisToRun +"]" );
+			
+		} else if ( theRunner.exception != null ) {
+			
+			throw theRunner.exception;
+		}
+		
+		return theRunner.result;
+	}
+	
 	public static <T,U> U executeQuietly( T inValue, U inDefaultResult, Function<T,U> inFunction ) {
 		
  		if ( inValue == null || inFunction == null ) { return inDefaultResult; }
@@ -3488,6 +3743,8 @@ public abstract class Utils {
 		return (inMillis) + (inSeconds * de.greyshine.utils.Utils.MILLIS_1_SECOND) + (inMinutes * de.greyshine.utils.Utils.MILLIS_1_MINUTE) + (inHours * de.greyshine.utils.Utils.MILLIS_1_HOUR)
 				+ (inDays * MILLIS_1_DAY);
 	}
+
+	
 
 
 }

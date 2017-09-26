@@ -9,7 +9,17 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Helper to evaluate <tt>public static void main(String[] args)</tt>-Args
+ * Helper to evaluate <tt>public static void main(String[] args)</tt>-Args.
+ * 
+ * How it works:<br/>
+ * <ol>
+ * <li>Create a static instance of {@link CommandLineParser} and configure it via flow api.</li>
+ * <li>the static instance is able to create {@link Args} instances by parsing the {@link String[]} main args.</li>
+ * </ol>
+ * Or even simplier:
+ * <code>Args theArgs = CommandLineParse.args( String[] args );</code>
+ * 
+ * 
  */
 public class CommandLineParser {
 
@@ -43,6 +53,15 @@ public class CommandLineParser {
 	private String usageText;
 	private String footerText;
 
+	/**
+	 * Fastes, easiest and simpliest way to gracefully acces the args.
+	 * @param inArgs
+	 * @return
+	 */
+	public static Args args(String[] inArgs) {
+		return new CommandLineParser().parse( inArgs );
+	}
+	
 	/**
 	 * A simple arg. Is not prefixed by any amount of hyphens.<br/>
 	 * Arguments passed at last with a command.<br/>
@@ -455,6 +474,14 @@ public class CommandLineParser {
 			for (int i = 0; i < args.length; i++) {
 				this.args[i] = this.args[i] == null ? "" : this.args[i];
 			}
+		}
+		
+		public boolean isExistingArgAtIndex(int inIndex) {
+			return inIndex >= 0 && inIndex < args.length;
+		}
+		
+		public int getArgsCount() {
+			return args.length;
 		}
 		
 		public List<String> getArgs() {
