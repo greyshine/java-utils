@@ -71,7 +71,7 @@ public class Trnsfrm {
 			inStream = null;
 			outStream = null;
 			
-			serr( CLP.getHelp( "bad algorithm: " + theAlgorithmName + "; use one of: " + Arrays.asList(Algorithm.values()) ), false);
+			serr( CLP.getHelp( "bad algorithm: " + (algorithm==null? "?" : algorithm.toString()) + "; use one of: " + Arrays.asList(Algorithm.values()) ), false);
 			return;
 		}
 		
@@ -83,6 +83,10 @@ public class Trnsfrm {
 	
 	private void execute() throws Exception {
 		
+		if ( algorithm == null ) { 
+			// help message was displayed initially
+			return;
+		}
 		if ( inStream == null ) { return; }
 		if ( outStream == null ) { return; }
 		

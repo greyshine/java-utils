@@ -25,27 +25,123 @@
 			</plugin>
 
 			<!-- DEPRECATED!!! see https://stackoverflow.com/a/23937311/845117 -->
+			<!-- http://stackoverflow.com/a/15799254 -->
+			<!-- plugin> <artifactId>maven-assembly-plugin</artifactId> <version>3.0.0</version> 
+				<executions> <execution> <id>build-publisher-characterscanner</id> <configuration> 
+				<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.CharacterScanner</mainClass> 
+				</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+				</descriptorRefs> <finalName>greyshine.characterscanner-${project.version}</finalName> 
+				</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
+				</execution> <execution> <id>build-publisher-dencoder</id> <configuration> 
+				<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.Dencoder</mainClass> 
+				</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+				</descriptorRefs> <finalName>greyshine.dencoder-${project.version}</finalName> 
+				</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
+				</execution> <execution> <id>build-publisher-trnsfrm</id> <configuration> 
+				<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.Trnsfrm</mainClass> 
+				</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
+				</descriptorRefs> <finalName>greyshine.trnsfrm-${project.version}</finalName> 
+				</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
+				</execution> </executions> </plugin -->
+
 			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<!-- http://stackoverflow.com/a/15799254 -->
-				<version>3.0.0</version>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.1.0</version>
 				<executions>
-					<!-- <execution> <id>build-publisher-characterscanner</id> <configuration> 
-						<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.CharacterScanner</mainClass> 
-						</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
-						</descriptorRefs> <finalName>greyshine.characterscanner-${project.version}</finalName> 
-						</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
-						</execution> <execution> <id>build-publisher-dencoder</id> <configuration> 
-						<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.Dencoder</mainClass> 
-						</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
-						</descriptorRefs> <finalName>greyshine.dencoder-${project.version}</finalName> 
-						</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
-						</execution> <execution> <id>build-publisher-trnsfrm</id> <configuration> 
-						<appendAssemblyId>false</appendAssemblyId> <archive> <manifest> <mainClass>de.greyshine.tools.Trnsfrm</mainClass> 
-						</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
-						</descriptorRefs> <finalName>greyshine.trnsfrm-${project.version}</finalName> 
-						</configuration> <phase>package</phase> <goals> <goal>single</goal> </goals> 
-						</execution> -->
+					<execution>
+						<id>de.greyshine.tools.CharacterScanner</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<finalName>greyshine.tools.CharacterScanner-${project.version}</finalName>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>de.greyshine.tools.CharacterScanner</mainClass>
+									<manifestEntries>
+										<Build-Number>${project.version}</Build-Number>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+							<filters>
+								<filter>
+									<!-- https://stackoverflow.com/a/9592131/845117 -->
+									<!-- http://www.jamesswafford.com/2012/03/11/java-lang-securityexception-no-manifest-section-for-signature-file-entry/ -->
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+					<execution>
+						<id>de.greyshine.tools.Dencoder</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<finalName>greyshine.tools.Dencoder-${project.version}</finalName>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>de.greyshine.tools.Dencoder</mainClass>
+									<manifestEntries>
+										<Build-Number>${project.version}</Build-Number>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+							<filters>
+								<filter>
+									<!-- https://stackoverflow.com/a/9592131/845117 -->
+									<!-- http://www.jamesswafford.com/2012/03/11/java-lang-securityexception-no-manifest-section-for-signature-file-entry/ -->
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
+					<execution>
+						<id>de.greyshine.tools.Trnsfrm</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<finalName>greyshine.tools.Trnsfrm-${project.version}</finalName>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>de.greyshine.tools.Trnsfrm</mainClass>
+									<manifestEntries>
+										<Build-Number>${project.version}</Build-Number>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+							<filters>
+								<filter>
+									<!-- https://stackoverflow.com/a/9592131/845117 -->
+									<!-- http://www.jamesswafford.com/2012/03/11/java-lang-securityexception-no-manifest-section-for-signature-file-entry/ -->
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+									</excludes>
+								</filter>
+							</filters>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 
