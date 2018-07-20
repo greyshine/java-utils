@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Untitled Document</title>
+
+<script type="text/javascript">
+
+	const triggersLength = 32;
+	var iid = null;
+	var triggers = new Array(triggersLength);
+	var cnt = 0;
+	var loops = 0;
+	var speed = 60; // 60 bpm
+
+	var a = document.createElement("AUDIO");
+	a.src = 'hhat.mp3';
+	var b = document.createElement("AUDIO");
+	b.src = 'snre.mp3';
+	var c = document.createElement("AUDIO");
+	c.src = 'base.mp3';
+	
+	var tracks = [
+		{ 
+			"name":"hhat",
+			"audio": a,
+			"triggers":new Array(triggersLength)
+		},
+		{ 
+			"name":"snre",
+			"audio": b,
+			"triggers":new Array(triggersLength)
+		},
+		{ 
+			"name":"base",
+			"audio": c,
+			"triggers":new Array(triggersLength)
+		}
+	];
+	
+	var tracks = 
+		{ 
+			"hhat": {
+				"audio": a,
+				"triggers":new Array(triggersLength)
+			},
+			"snre": {
+				"audio": b,
+				"triggers":new Array(triggersLength)
+			},
+			"base": {
+				"audio": c,
+				"triggers":new Array(triggersLength)
+			}
+		};
+	
+	tracks["base"]["triggers"][0] = true;
+	tracks["hhat"]["triggers"][2] = true;
+	//tracks["snre"]["triggers"][4] = true;
+	tracks["hhat"]["triggers"][6] = true;
+
+	tracks["base"]["triggers"][8] = true;
+	tracks["hhat"]["triggers"][10] = true;
+	//tracks["snre"]["triggers"][12] = true;
+	tracks["hhat"]["triggers"][14] = true;
+
+	tracks["base"]["triggers"][16] = true;
+	tracks["hhat"]["triggers"][18] = true;
+	//tracks["snre"]["triggers"][20] = true;
+	tracks["hhat"]["triggers"][22] = true;
+
+	tracks["base"]["triggers"][24] = true;
+	tracks["hhat"]["triggers"][26] = true;
+	//tracks["snre"]["triggers"][28] = true;
+	tracks["hhat"]["triggers"][30] = true;
+	
+	var theFct = function() {
+		
+		
+		
+		for(var aTrack in tracks) {
+
+			if ( tracks[aTrack]['triggers'][cnt] === true ) { 
+				console.log('play '+ tracks[aTrack] +" on "+ loops +"/"+ cnt );
+				tracks[aTrack]["audio"].play();	
+			} else {
+				//console.log('no ['+ cnt +']: '+ tracks[aTrack]['triggers'][cnt]);
+			}
+		}
+	};
+	
+	var p = function() {
+		
+		// delete trigger
+		clearInterval( iid )
+		cnt = -1;
+		loop = 1;
+		
+		console.log('started...');
+		
+		iid = setInterval(function(){ 
+			
+			if ( cnt >= triggersLength ) {
+				loops++;
+				cnt = -1;
+			}
+			cnt++;
+			
+			//console.log('triggered ['+ cnt +'] ...');
+			theFct();
+			
+		}, ((1000/4) / 2) );
+		
+	};
+
+</script>
+
+</head>
+
+<input type="button" value="PLAY" onclick="p();" /><br/>
+<input type="button" value="STOP" onclick="clearInterval(iid);" />
+	
+	
+	<hr/>
+	
+	<a href="http://sampleswap.org/filebrowser-new.php?d=DRUMS+and+SINGLE+HITS%2F" target="_blank">http://sampleswap.org/filebrowser-new.php?d=DRUMS+and+SINGLE+HITS%2F</a>
+
+<body>
+</body>
+</html>

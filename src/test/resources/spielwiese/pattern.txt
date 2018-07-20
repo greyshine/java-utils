@@ -1,0 +1,4 @@
+     X---X---X---X---X---X---X---X---
+HHAT:X   X   X   X   X   X   X   X
+SNRE:    X       X       X       X
+BASE:X       X       X       X

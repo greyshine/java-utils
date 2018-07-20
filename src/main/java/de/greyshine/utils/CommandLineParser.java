@@ -135,7 +135,7 @@ public class CommandLineParser {
 	 * The argument is prefixed with a hyphen in the short version.<br/>
 	 * The long version is prefixed with two hyphens. Both of them are treated equally.<br/>
 	 * Depending on setting up the {@link CommandLineParser} an option may have a parameter which when registered must exist.<br/>
-	 * Me, I called it parameter beacaus calling it arg of an arg sound confusing. 
+	 * Me, I called it parameter beacaus calling it arg of an arg sounds confusing. 
 	 */
 	public class Option {
 
@@ -251,32 +251,32 @@ public class CommandLineParser {
 		usageText = "usage: " + (inUsageText == null ? "" : inUsageText);
 		return this;
 	}
-
-	public CommandLineParser generateUsageText(String inCommand) {
-
-		String usageLine = inCommand;
+	
+	private String createUsageText(String inCommand) {
+		
+		String theUsageLine = inCommand != null ? inCommand : "";
 		for (Option anOption : options) {
 			
-			usageLine +=" ";
+			theUsageLine +=" ";
 			if ( anOption.isOptional ) {
-				usageLine += "[";
+				theUsageLine += "[";
 			}
-			usageLine += "-"+ anOption.option;
+			theUsageLine += "-"+ anOption.option;
 			
 			if ( anOption.parameterName != null ) {
-				usageLine += " <"+ anOption.parameterName +">";
+				theUsageLine += " <"+ anOption.parameterName +">";
 			}
 			
 			if ( anOption.isOptional ) {
-				usageLine += "]";
+				theUsageLine += "]";
 			}
 		}
 		
 		for( SimpleArg sa : simpleArgs ) {
-			usageLine += " ";
-			usageLine += "<"+sa.name+">";
+			theUsageLine += " ";
+			theUsageLine += "<"+sa.name+">";
 			if ( sa.isMulti ) {
-				usageLine+="...";
+				theUsageLine+="...";
 			}
 		}
 		
@@ -381,8 +381,20 @@ public class CommandLineParser {
 			optionsBlock += "\n" + optionSubBlock;
 			
 		}
+		
+		return theUsageLine + System.lineSeparator() + optionsBlock;
+	}
 
-		return usageText(usageLine + System.lineSeparator() + optionsBlock);
+	/**
+	 * 
+	 * @param inCommand the command to be executed. Actually the text to display how to invoke the command.
+	 * @return
+	 */
+	public CommandLineParser generateUsageText(String inCommand) {
+
+		final String theUsageText = createUsageText(inCommand);
+		
+		return usageText( theUsageText );
 	}
 
 	public CommandLineParser headerText(String inHeaderText) {
@@ -413,10 +425,10 @@ public class CommandLineParser {
 			sb.append(System.lineSeparator());
 		}
 
-		if (usageText != null) {
-			sb.append(usageText);
-		}
-
+		String theUsageText = usageText != null ? usageText : createUsageText(null);
+		
+		sb.append(theUsageText);
+		
 		if (footerText != null) {
 			sb.append(System.lineSeparator());
 			sb.append(footerText);
@@ -428,7 +440,10 @@ public class CommandLineParser {
 	public void printHelp(String inCustomMessage, Stream inStream) {
 		
 		inStream = inStream != null ? inStream : Stream.OUT;
-		inStream.getStream().println( getHelp(inCustomMessage) );
+		
+		final String theHelpText = getHelp(inCustomMessage);
+		
+		inStream.getStream().println( theHelpText );
 	}
 	
 	public void printHelp() {
@@ -699,6 +714,13 @@ public class CommandLineParser {
 		 */
 		public boolean isQuiet() {
 			return isOption( "q" );
+		}
+
+		/**
+		 * @return whether the args are empty
+		 */
+		public boolean isEmpty() {
+			return args.length < 1;
 		}
 	}
 	

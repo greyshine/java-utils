@@ -1303,7 +1303,7 @@ public abstract class Utils {
 	}
 	
 	public static int writeFile(File inFile, String inValue) throws IOException {
-	
+
 		return writeFile( inFile, inValue, CHARSET_UTF8 );
 	}
 	
@@ -3117,11 +3117,19 @@ public abstract class Utils {
 		
 		final Map<Thread,Long> timeouts = new HashMap<>();
 		
+		// The Java Virtual Machine exits when the only threads running are all daemon threads.
+		final boolean DEAMON = true; 
+		
 		public TimeoutGuard() {
+			
 			setName( getClass().getTypeName() );
+			
+			// TODO: find solution whether to make it deamon or not 
+			super.setDaemon( DEAMON );
+			
 			super.start();
 		}
-
+		
 		@Override
 		public void run() {
 			
@@ -3163,46 +3171,12 @@ public abstract class Utils {
 			}
 		}
 		
-		public void register( long inMillisToLive, Thread t ) {
-			synchronized ( timeouts ) {
-				timeouts.put(t , System.currentTimeMillis() + inMillisToLive);
-			}
-		}
-
 		public void unregister( Thread t ) {
 			synchronized ( timeouts ) {
 				timeouts.remove(t);
 			}
 		}
 	}
-	
-	/**
-	 * @deprecated interrupting does not properly work since the supplier's execution / or its delegation does not check for interrupted thread state.
-	 * @param inSupplier
-	 * @param inMaxMillisToRun
-	 * @return
-	 * @throws TimeoutException when the timeout occured
-	 * @throws Exception
-	 */
-	public static <T> T _executeWithTimeout(Supplier<T> inSupplier, long inMaxMillisToRun) throws TimeoutException, Exception {
-		
-		if ( inSupplier == null ) { throw new IllegalArgumentException( "supplier is null" ); }
-		else if ( inMaxMillisToRun < 1 ) {
-			return inSupplier.get();
-		}
-		
-		try {
-			
-			TIMEOUTGUARD.register( inMaxMillisToRun, Thread.currentThread() );
-			
-			return inSupplier.get(); 
-			
-		} finally {
-			
-			TIMEOUTGUARD.unregister( Thread.currentThread() );
-		}
-	}
-	
 	
 	/**
 	 * @param inSupplier
