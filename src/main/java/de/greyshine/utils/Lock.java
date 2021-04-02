@@ -128,7 +128,8 @@ public class Lock {
 		 */
 		for (final LockItem aLockItem : lockedItems) {
 
-			if (aLockItem == inObject) {
+			// TODO rethink object comparance whether equals would fit better
+			if (aLockItem.object == inObject) {
 
 				LOG.debug("hit locked object " + aLockItem.object);
 
